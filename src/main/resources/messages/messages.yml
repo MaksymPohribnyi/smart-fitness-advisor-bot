@@ -1,0 +1,107 @@
+# Bot Menu Commands
+menu:
+  start: 🚀 Start bot
+  my_profile: 👤 My Strava Profile
+  activities: 🏃‍♂️ My Activities
+  help: ℹ️ Help & info
+
+# Bot pattern messages
+bot:
+  welcome: |
+    🏃‍♂️ Hello, {0}! Welcome to Smart Fitness Advisor Bot!
+
+    I will help you:
+    📊 Track your fitness data
+    📈 Analyze your progress
+    💡 Provide personalized advice
+    🎯 Motivate you to reach your goals
+    
+    To begin, please connect your Strava account: 		
+  welcome.already_connected: |
+    👋 Welcome back, {0}!
+  
+    Your Strava account is already connected. How can I help you?
+    Use /my_profile or /activities from the menu to view your statistics.
+
+athlete:
+  info: |
+    👤 *Athlete Profile*
+  
+    🏃 *Name:* {0} {1}
+    📍 *Location:* {2}
+    ⚧ *Sex:* {3}
+    ⚖️ *Weight:* {4}
+    👥 *Followers:* {5}
+    👫 *Friends:* {6}
+    ⭐ *Premium:* {7}
+    📅 *On Strava since:* {6}
+
+  activity:
+    header: "🏃 *Your Recent Activities:*\n\n"
+    no_activities: 🤷‍♂️ No activities found. Time to work out!
+    item: |
+      {0}. *{1}* ({2})
+      📅 Date: {3}
+      📏 Distance: {4} km
+      ⏱ Time: {5}
+      ⚡ Avg. Speed: {6} km/h
+      💓 Avg. Heartrate: {7}
+      🔥 Calories: {8}
+      ⛰ Elevation gain: {9} m
+           
+# Connection to Strava
+strava:
+  connect_message: "To connect Strava, press the button below:"
+  disconnected_success: "✅ You have successfully disconnected your Strava account."
+  html:
+    success:
+      title: "Strava Connected"
+      h1: "Successfully Connected!"
+      p1: "Your Strava account has been connected."
+      p2: "Return to Telegram to continue."
+    error:
+      title: "Connection Failed"
+    button:
+      open_bot: "Open Bot"
+      return_bot: "Return to Bot"
+  
+# Telegram Notifications
+telegram:
+  connect:
+    success:
+      "✅ Strava account connected successfully!\n\nI can now fetch your fitness data."
+    failure: 
+      "❌ Failed to connect Strava.\n\nError: {0}\n\nPlease use /start and select *Connect Strava* to try again."
+  
+# Buttons
+button:
+  connect_strava: 🔗 Connect Strava
+  authorize_strava: 🔑 Authorize with Strava
+  disconnect_strava: ❌ Disconnect Strava
+  view_stats: 📊 View Stats
+  update_stats: 🔄 Sync Activities
+
+# ERROR messages
+error:
+  strava_not_connected: ❌ You are not connected to Strava. Use /start to see the connection button.
+  unknown: ❌ An error occurred. Please try again later.
+  
+ # Format
+format:
+  friend: friend
+  na: N/A
+  location:
+     unknown: Not specified
+  gender:
+    m: Male
+    f: Female
+    unknown: Not specified
+  weight:
+    kg: "{0} kg"
+  premium:
+    yes: ✨ Yes
+    no: No
+  heartrate:
+    bpm: "{0} bpm"
+  calories:
+    kcal: "{0} kcal"

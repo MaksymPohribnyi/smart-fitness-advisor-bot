@@ -1,0 +1,90 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: smart-fitness-advisor-bot
+
+# Database Configuration
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+#    hikari:
+#      maximum-pool-size: ${DB_POOL_SIZE:10}
+#      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+#      connection-timeout: 30000
+      
+jpa:
+  hibernate:
+    ddl-auto: update
+  properties:
+    hibernate:
+      dialect: org.hibernate.dialect.PostgreSQLDialect	
+      generate_statistics: false
+      # Batch processing for bulk inserts
+      jdbc:
+        batch_size: 50  
+        batch_versioned_data: true
+      order_inserts: true  
+      order_updates: true
+      
+      # Query optimization
+      default_batch_fetch_size: 10
+
+# Telegram Bot Configuration
+telegram:
+  bot:
+    token: ${TELEGRAM_BOT_TOKEN}
+    username: ${TELEGRAM_BOT_USERNAME}
+    webhook:
+      url: ${TELEGRAM_WEBHOOK_URL}
+      enabled: false
+
+# Google OAuth Configuration
+google:
+  oauth:
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
+    redirect-uri: ${GOOGLE_REDIRECT_URI}
+    gemini:
+      api:
+        key: ${GEMINI_API_KEY}
+
+# Google Fitness API Configuration
+google-fitness:
+  api:
+    base-url: ${GOOGLE_FITNESS_API_BASE_URL}
+
+strava:
+  client-id: ${STRAVA_CLIENT_ID}
+  client-secret: ${STRAVA_CLIENT_SECRET}
+  redirect-uri: ${STRAVA_REDIRECT_URI}
+  api:
+    base-url: ${STRAVA_API_BASE_URL:https://www.strava.com}
+  auth:
+    token-url: ${STRAVA_AUTH_TOKEN_URL:https://www.strava.com/api/v3/oauth/token}
+    authorize-url: ${STRAVA_AUTH_AUTHORIZE_URL:https://www.strava.com/oauth/authorize}
+    activities-url: ${STRAVA_API_ACTIVITIES_URL:https://www.strava.com/api/v3/athlete/activities}
+  scopes: ${STRAVA_SCOPES:read,activity:read_all,athlete:read_all}
+
+ # Security Configuration
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000}
+    encryption:
+      key: ${SECURITY_ENCRYPTION_KEY}
+
+# Server Configuration
+server-config:
+  base-url: ${SERVER_BASE_URL:http://localhost:8080}
+
+  logging:
+    level:
+      com.ua.pohribnyi.fitadvisorbot: DEBUG
+      org.hibernate.SQL: DEBUG
+      org.hibernate.stat: DEBUG
+      org.hibernate.type.descriptor.sql: TRACE
+      org.hibernate.engine.jdbc.batch.internal: DEBUG

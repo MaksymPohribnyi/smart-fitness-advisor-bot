@@ -1,0 +1,53 @@
+version: '3.9'
+
+services:
+  
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fitadvisor-bot-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.dev
+    depends_on:
+      - postgres
+    networks:
+      - fitadvisor-network   
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: fitness-advisor-db
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: fitness_advisor
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - fitadvisor-network
+
+#  redis:
+#    image: redis:7-alpine
+#    container_name: fitness-analytics-redis
+#    restart: unless-stopped
+#    ports:
+#      - "6379:6379"
+#    volumes:
+#      - redis_data:/data
+#    networks:
+#      - fitadvisor-network
+
+volumes:
+  postgres_data:
+#  redis_data:
+
+networks:
+  fitadvisor-network:
+    driver: bridge

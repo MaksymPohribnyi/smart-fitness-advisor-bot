@@ -1,0 +1,901 @@
+[
+	{
+		"model": "gemini2.5 flash",
+		"time": 0.36,
+		"Input_tokens": 854,
+		"Output_tokens": 10.029,
+		"Total_tokens": 10.883,
+		"status": "ok!"
+	},
+	{
+		"model": "ollama phi3:mini",
+		"time": "_",
+		"status": "prompt failed"
+	},
+	{
+		"model": "ollama qwen2.5:7b",
+		"time": "_",
+		"status": "prompt failed"
+	},
+	{
+		"model": "ollama llama3.2:3b",
+		"time": "6mins",
+		"status": "prompt bad quality"
+	},
+	{
+		"dailyMetrics": [
+			{
+				"date": "2025-08-01",
+				"sleepHours": 7.5,
+				"dailyBaseSteps": 5800,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-02",
+				"sleepHours": 7.8,
+				"dailyBaseSteps": 6100,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-08-03",
+				"sleepHours": 7.1,
+				"dailyBaseSteps": 4500,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-04",
+				"sleepHours": 6.8,
+				"dailyBaseSteps": 3900,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-05",
+				"sleepHours": 8.0,
+				"dailyBaseSteps": 5500,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-08-06",
+				"sleepHours": 7.3,
+				"dailyBaseSteps": 6500,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-07",
+				"sleepHours": 7.9,
+				"dailyBaseSteps": 4200,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-08",
+				"sleepHours": 7.0,
+				"dailyBaseSteps": 7000,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-08-09",
+				"sleepHours": 6.2,
+				"dailyBaseSteps": 3500,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-08-10",
+				"sleepHours": 7.7,
+				"dailyBaseSteps": 5100,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-11",
+				"sleepHours": 7.5,
+				"dailyBaseSteps": 4900,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-12",
+				"sleepHours": 8.1,
+				"dailyBaseSteps": 6000,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-08-13",
+				"sleepHours": 7.2,
+				"dailyBaseSteps": 5700,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-08-14",
+				"sleepHours": 7.6,
+				"dailyBaseSteps": 4800,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-15",
+				"sleepHours": 6.9,
+				"dailyBaseSteps": 6800,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-08-16",
+				"sleepHours": 6.5,
+				"dailyBaseSteps": 3200,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-17",
+				"sleepHours": 7.4,
+				"dailyBaseSteps": 5300,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-18",
+				"sleepHours": 7.0,
+				"dailyBaseSteps": 4000,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-08-19",
+				"sleepHours": 8.3,
+				"dailyBaseSteps": 5900,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-08-20",
+				"sleepHours": 7.1,
+				"dailyBaseSteps": 6200,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-21",
+				"sleepHours": 7.8,
+				"dailyBaseSteps": 4400,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-08-22",
+				"sleepHours": 6.7,
+				"dailyBaseSteps": 7100,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-23",
+				"sleepHours": 7.3,
+				"dailyBaseSteps": 5000,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-24",
+				"sleepHours": 7.5,
+				"dailyBaseSteps": 4700,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-25",
+				"sleepHours": 7.9,
+				"dailyBaseSteps": 3800,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-08-26",
+				"sleepHours": 6.8,
+				"dailyBaseSteps": 5600,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-08-27",
+				"sleepHours": 7.2,
+				"dailyBaseSteps": 6300,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-28",
+				"sleepHours": 8.1,
+				"dailyBaseSteps": 4100,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-08-29",
+				"sleepHours": 7.0,
+				"dailyBaseSteps": 7200,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-08-30",
+				"sleepHours": 6.4,
+				"dailyBaseSteps": 3400,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-08-31",
+				"sleepHours": 7.6,
+				"dailyBaseSteps": 5200,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-01",
+				"sleepHours": 7.1,
+				"dailyBaseSteps": 4600,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-09-02",
+				"sleepHours": 8.0,
+				"dailyBaseSteps": 6000,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-09-03",
+				"sleepHours": 7.3,
+				"dailyBaseSteps": 5800,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-04",
+				"sleepHours": 7.7,
+				"dailyBaseSteps": 4300,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-09-05",
+				"sleepHours": 6.9,
+				"dailyBaseSteps": 6900,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-06",
+				"sleepHours": 7.4,
+				"dailyBaseSteps": 4900,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-07",
+				"sleepHours": 7.5,
+				"dailyBaseSteps": 5100,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-08",
+				"sleepHours": 6.0,
+				"dailyBaseSteps": 3000,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-09-09",
+				"sleepHours": 5.5,
+				"dailyBaseSteps": 3500,
+				"stressLevel": 4
+			},
+			{
+				"date": "2025-09-10",
+				"sleepHours": 5.8,
+				"dailyBaseSteps": 4000,
+				"stressLevel": 4
+			},
+			{
+				"date": "2025-09-11",
+				"sleepHours": 5.2,
+				"dailyBaseSteps": 3100,
+				"stressLevel": 5
+			},
+			{
+				"date": "2025-09-12",
+				"sleepHours": 6.1,
+				"dailyBaseSteps": 3300,
+				"stressLevel": 4
+			},
+			{
+				"date": "2025-09-13",
+				"sleepHours": 5.7,
+				"dailyBaseSteps": 3600,
+				"stressLevel": 5
+			},
+			{
+				"date": "2025-09-14",
+				"sleepHours": 6.3,
+				"dailyBaseSteps": 3800,
+				"stressLevel": 4
+			},
+			{
+				"date": "2025-09-15",
+				"sleepHours": 7.0,
+				"dailyBaseSteps": 4500,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-09-16",
+				"sleepHours": 7.5,
+				"dailyBaseSteps": 5500,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-17",
+				"sleepHours": 7.2,
+				"dailyBaseSteps": 6100,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-18",
+				"sleepHours": 8.0,
+				"dailyBaseSteps": 4700,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-09-19",
+				"sleepHours": 7.1,
+				"dailyBaseSteps": 7000,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-20",
+				"sleepHours": 7.6,
+				"dailyBaseSteps": 5000,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-21",
+				"sleepHours": 6.9,
+				"dailyBaseSteps": 4900,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-09-22",
+				"sleepHours": 7.8,
+				"dailyBaseSteps": 4200,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-23",
+				"sleepHours": 8.1,
+				"dailyBaseSteps": 6200,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-09-24",
+				"sleepHours": 7.3,
+				"dailyBaseSteps": 5700,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-25",
+				"sleepHours": 7.9,
+				"dailyBaseSteps": 4400,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-09-26",
+				"sleepHours": 6.7,
+				"dailyBaseSteps": 6800,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-09-27",
+				"sleepHours": 7.5,
+				"dailyBaseSteps": 5100,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-28",
+				"sleepHours": 7.0,
+				"dailyBaseSteps": 5300,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-09-29",
+				"sleepHours": 8.2,
+				"dailyBaseSteps": 4000,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-09-30",
+				"sleepHours": 7.4,
+				"dailyBaseSteps": 6500,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-01",
+				"sleepHours": 7.1,
+				"dailyBaseSteps": 5900,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-02",
+				"sleepHours": 7.7,
+				"dailyBaseSteps": 4500,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-10-03",
+				"sleepHours": 6.9,
+				"dailyBaseSteps": 7100,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-04",
+				"sleepHours": 7.5,
+				"dailyBaseSteps": 5000,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-05",
+				"sleepHours": 7.2,
+				"dailyBaseSteps": 4800,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-06",
+				"sleepHours": 8.0,
+				"dailyBaseSteps": 4300,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-10-07",
+				"sleepHours": 7.3,
+				"dailyBaseSteps": 6300,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-08",
+				"sleepHours": 7.6,
+				"dailyBaseSteps": 5700,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-09",
+				"sleepHours": 7.8,
+				"dailyBaseSteps": 4600,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-10-10",
+				"sleepHours": 6.8,
+				"dailyBaseSteps": 6900,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-11",
+				"sleepHours": 7.1,
+				"dailyBaseSteps": 5200,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-12",
+				"sleepHours": 7.5,
+				"dailyBaseSteps": 5000,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-13",
+				"sleepHours": 8.3,
+				"dailyBaseSteps": 4100,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-10-14",
+				"sleepHours": 7.0,
+				"dailyBaseSteps": 6000,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-10-15",
+				"sleepHours": 7.4,
+				"dailyBaseSteps": 5500,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-16",
+				"sleepHours": 7.9,
+				"dailyBaseSteps": 4400,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-10-17",
+				"sleepHours": 6.7,
+				"dailyBaseSteps": 7200,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-18",
+				"sleepHours": 7.3,
+				"dailyBaseSteps": 5100,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-19",
+				"sleepHours": 7.5,
+				"dailyBaseSteps": 4900,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-20",
+				"sleepHours": 8.1,
+				"dailyBaseSteps": 4000,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-10-21",
+				"sleepHours": 7.2,
+				"dailyBaseSteps": 6100,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-22",
+				"sleepHours": 7.6,
+				"dailyBaseSteps": 5800,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-23",
+				"sleepHours": 7.8,
+				"dailyBaseSteps": 4700,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-10-24",
+				"sleepHours": 6.9,
+				"dailyBaseSteps": 7000,
+				"stressLevel": 3
+			},
+			{
+				"date": "2025-10-25",
+				"sleepHours": 7.4,
+				"dailyBaseSteps": 5300,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-26",
+				"sleepHours": 7.7,
+				"dailyBaseSteps": 5100,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-27",
+				"sleepHours": 8.0,
+				"dailyBaseSteps": 4200,
+				"stressLevel": 1
+			},
+			{
+				"date": "2025-10-28",
+				"sleepHours": 7.1,
+				"dailyBaseSteps": 6200,
+				"stressLevel": 2
+			},
+			{
+				"date": "2025-10-29",
+				"sleepHours": 7.5,
+				"dailyBaseSteps": 5900,
+				"stressLevel": 2
+			}
+		],
+		"activities": [
+			{
+				"dateTime": "2025-08-01T18:30:00",
+				"type": "Run",
+				"durationSeconds": 3720,
+				"distanceMeters": 10000,
+				"avgPulse": 155,
+				"maxPulse": 175,
+				"minPulse": 130,
+				"caloriesBurned": 650,
+				"activitySteps": 9500
+			},
+			{
+				"dateTime": "2025-08-04T08:00:00",
+				"type": "Ride",
+				"durationSeconds": 4800,
+				"distanceMeters": 12500,
+				"avgPulse": 140,
+				"maxPulse": 160,
+				"minPulse": 110,
+				"caloriesBurned": 580,
+				"activitySteps": 0
+			},
+			{
+				"dateTime": "2025-08-06T19:00:00",
+				"type": "Run",
+				"durationSeconds": 2400,
+				"distanceMeters": 6000,
+				"avgPulse": 160,
+				"maxPulse": 185,
+				"minPulse": 135,
+				"caloriesBurned": 420,
+				"activitySteps": 6000
+			},
+			{
+				"dateTime": "2025-08-08T07:30:00",
+				"type": "Run",
+				"durationSeconds": 3660,
+				"distanceMeters": 9800,
+				"avgPulse": 163,
+				"maxPulse": 188,
+				"minPulse": 140,
+				"caloriesBurned": 640,
+				"activitySteps": 9300
+			},
+			{
+				"dateTime": "2025-08-11T18:00:00",
+				"type": "Ride",
+				"durationSeconds": 5100,
+				"distanceMeters": 14000,
+				"avgPulse": 138,
+				"maxPulse": 155,
+				"minPulse": 105,
+				"caloriesBurned": 620,
+				"activitySteps": 0
+			},
+			{
+				"dateTime": "2025-08-13T07:00:00",
+				"type": "Run",
+				"durationSeconds": 3540,
+				"distanceMeters": 9500,
+				"avgPulse": 165,
+				"maxPulse": 190,
+				"minPulse": 145,
+				"caloriesBurned": 630,
+				"activitySteps": 9000
+			},
+			{
+				"dateTime": "2025-08-15T19:30:00",
+				"type": "Run",
+				"durationSeconds": 2100,
+				"distanceMeters": 5500,
+				"avgPulse": 158,
+				"maxPulse": 180,
+				"minPulse": 130,
+				"caloriesBurned": 380,
+				"activitySteps": 5500
+			},
+			{
+				"dateTime": "2025-08-18T07:45:00",
+				"type": "Ride",
+				"durationSeconds": 4500,
+				"distanceMeters": 11000,
+				"avgPulse": 135,
+				"maxPulse": 150,
+				"minPulse": 100,
+				"caloriesBurned": 500,
+				"activitySteps": 0
+			},
+			{
+				"dateTime": "2025-08-20T19:00:00",
+				"type": "Run",
+				"durationSeconds": 3600,
+				"distanceMeters": 9800,
+				"avgPulse": 152,
+				"maxPulse": 172,
+				"minPulse": 125,
+				"caloriesBurned": 610,
+				"activitySteps": 9300
+			},
+			{
+				"dateTime": "2025-08-23T07:30:00",
+				"type": "Run",
+				"durationSeconds": 3540,
+				"distanceMeters": 9600,
+				"avgPulse": 158,
+				"maxPulse": 180,
+				"minPulse": 135,
+				"caloriesBurned": 600,
+				"activitySteps": 9100
+			},
+			{
+				"dateTime": "2025-08-26T18:45:00",
+				"type": "Run",
+				"durationSeconds": 3540,
+				"distanceMeters": 10000,
+				"avgPulse": 164,
+				"maxPulse": 187,
+				"minPulse": 140,
+				"caloriesBurned": 660,
+				"activitySteps": 9500
+			},
+			{
+				"dateTime": "2025-08-29T07:15:00",
+				"type": "Ride",
+				"durationSeconds": 5400,
+				"distanceMeters": 14500,
+				"avgPulse": 135,
+				"maxPulse": 155,
+				"minPulse": 110,
+				"caloriesBurned": 650,
+				"activitySteps": 0
+			},
+			{
+				"dateTime": "2025-09-01T17:30:00",
+				"type": "Run",
+				"durationSeconds": 3480,
+				"distanceMeters": 9500,
+				"avgPulse": 155,
+				"maxPulse": 175,
+				"minPulse": 130,
+				"caloriesBurned": 590,
+				"activitySteps": 9000
+			},
+			{
+				"dateTime": "2025-09-04T19:00:00",
+				"type": "Run",
+				"durationSeconds": 2340,
+				"distanceMeters": 6000,
+				"avgPulse": 150,
+				"maxPulse": 170,
+				"minPulse": 125,
+				"caloriesBurned": 400,
+				"activitySteps": 6000
+			},
+			{
+				"dateTime": "2025-09-07T08:00:00",
+				"type": "Ride",
+				"durationSeconds": 3600,
+				"distanceMeters": 9000,
+				"avgPulse": 130,
+				"maxPulse": 145,
+				"minPulse": 105,
+				"caloriesBurned": 400,
+				"activitySteps": 0
+			},
+			{
+				"dateTime": "2025-09-17T18:00:00",
+				"type": "Run",
+				"durationSeconds": 2280,
+				"distanceMeters": 5500,
+				"avgPulse": 150,
+				"maxPulse": 170,
+				"minPulse": 125,
+				"caloriesBurned": 370,
+				"activitySteps": 5500
+			},
+			{
+				"dateTime": "2025-09-20T07:30:00",
+				"type": "Run",
+				"durationSeconds": 3360,
+				"distanceMeters": 9000,
+				"avgPulse": 160,
+				"maxPulse": 185,
+				"minPulse": 135,
+				"caloriesBurned": 580,
+				"activitySteps": 8500
+			},
+			{
+				"dateTime": "2025-09-23T19:15:00",
+				"type": "Ride",
+				"durationSeconds": 4200,
+				"distanceMeters": 11500,
+				"avgPulse": 135,
+				"maxPulse": 155,
+				"minPulse": 110,
+				"caloriesBurned": 480,
+				"activitySteps": 0
+			},
+			{
+				"dateTime": "2025-09-26T07:00:00",
+				"type": "Run",
+				"durationSeconds": 3480,
+				"distanceMeters": 10000,
+				"avgPulse": 168,
+				"maxPulse": 190,
+				"minPulse": 145,
+				"caloriesBurned": 670,
+				"activitySteps": 9500
+			},
+			{
+				"dateTime": "2025-09-29T18:30:00",
+				"type": "Run",
+				"durationSeconds": 3300,
+				"distanceMeters": 9500,
+				"avgPulse": 150,
+				"maxPulse": 170,
+				"minPulse": 125,
+				"caloriesBurned": 570,
+				"activitySteps": 9000
+			},
+			{
+				"dateTime": "2025-10-02T07:45:00",
+				"type": "Ride",
+				"durationSeconds": 4800,
+				"distanceMeters": 13000,
+				"avgPulse": 135,
+				"maxPulse": 155,
+				"minPulse": 110,
+				"caloriesBurned": 550,
+				"activitySteps": 0
+			},
+			{
+				"dateTime": "2025-10-04T18:00:00",
+				"type": "Run",
+				"durationSeconds": 3420,
+				"distanceMeters": 10000,
+				"avgPulse": 155,
+				"maxPulse": 175,
+				"minPulse": 130,
+				"caloriesBurned": 640,
+				"activitySteps": 9500
+			},
+			{
+				"dateTime": "2025-10-07T07:15:00",
+				"type": "Run",
+				"durationSeconds": 2160,
+				"distanceMeters": 5000,
+				"avgPulse": 155,
+				"maxPulse": 175,
+				"minPulse": 130,
+				"caloriesBurned": 340,
+				"activitySteps": 5000
+			},
+			{
+				"dateTime": "2025-10-10T19:00:00",
+				"type": "Ride",
+				"durationSeconds": 5000,
+				"distanceMeters": 13500,
+				"avgPulse": 140,
+				"maxPulse": 160,
+				"minPulse": 115,
+				"caloriesBurned": 600,
+				"activitySteps": 0
+			},
+			{
+				"dateTime": "2025-10-14T07:30:00",
+				"type": "Run",
+				"durationSeconds": 3300,
+				"distanceMeters": 10000,
+				"avgPulse": 163,
+				"maxPulse": 185,
+				"minPulse": 140,
+				"caloriesBurned": 650,
+				"activitySteps": 9500
+			},
+			{
+				"dateTime": "2025-10-16T18:45:00",
+				"type": "Run",
+				"durationSeconds": 2040,
+				"distanceMeters": 5000,
+				"avgPulse": 152,
+				"maxPulse": 172,
+				"minPulse": 130,
+				"caloriesBurned": 330,
+				"activitySteps": 5000
+			},
+			{
+				"dateTime": "2025-10-20T08:00:00",
+				"type": "Ride",
+				"durationSeconds": 4000,
+				"distanceMeters": 10500,
+				"avgPulse": 130,
+				"maxPulse": 150,
+				"minPulse": 105,
+				"caloriesBurned": 450,
+				"activitySteps": 0
+			},
+			{
+				"dateTime": "2025-10-23T19:30:00",
+				"type": "Run",
+				"durationSeconds": 3360,
+				"distanceMeters": 10000,
+				"avgPulse": 155,
+				"maxPulse": 175,
+				"minPulse": 130,
+				"caloriesBurned": 630,
+				"activitySteps": 9500
+			},
+			{
+				"dateTime": "2025-10-26T07:00:00",
+				"type": "Run",
+				"durationSeconds": 3180,
+				"distanceMeters": 9800,
+				"avgPulse": 158,
+				"maxPulse": 178,
+				"minPulse": 135,
+				"caloriesBurned": 600,
+				"activitySteps": 9300
+			},
+			{
+				"dateTime": "2025-10-29T18:00:00",
+				"type": "Run",
+				"durationSeconds": 3120,
+				"distanceMeters": 9500,
+				"avgPulse": 150,
+				"maxPulse": 170,
+				"minPulse": 125,
+				"caloriesBurned": 550,
+				"activitySteps": 9000
+			}
+		]
+	}
+]
