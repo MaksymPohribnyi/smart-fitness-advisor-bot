@@ -31,7 +31,7 @@ public class GenerationJob {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne
 	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
@@ -67,6 +67,12 @@ public class GenerationJob {
 	@Column(name = "error_code", length = 50)
 	private String errorCode;
 
+	@Column(name = "user_chat_id")
+	private Long userChatId;
+
+	@Column(name = "notification_message_id")
+	private Integer notificationMessageId;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt = Instant.now();
 
@@ -77,11 +83,13 @@ public class GenerationJob {
 	 * Factory method to create a new, valid job. This ensures all NOT-NULL
 	 * constraints are met.
 	 */
-	public static GenerationJob createPendingJob(User user) {
+	public static GenerationJob createPendingJob(User user, Long userChatId, Integer notificationId) {
 		GenerationJob job = new GenerationJob();
 		job.setUser(user);
 		job.setStatus(JobStatus.PENDING);
 		job.setCreatedAt(Instant.now());
+		job.setUserChatId(userChatId);
+		job.setNotificationMessageId(notificationId);
 		return job;
 	}
 
@@ -107,7 +115,7 @@ public class GenerationJob {
 		this.errorCode = errorCode;
 		this.errorMessage = truncate(errorMessage, 250);
 		this.errorDetails = truncate(errorDetails, 10000); // Limit to 10KB
-		this.rawResponse = null; 
+		this.rawResponse = null;
 	}
 
 	/**

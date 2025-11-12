@@ -1,4 +1,4 @@
-package com.ua.pohribnyi.fitadvisorbot.event;
+package com.ua.pohribnyi.fitadvisorbot.util.concurrency.event;
 
 import org.springframework.context.ApplicationEvent;
 

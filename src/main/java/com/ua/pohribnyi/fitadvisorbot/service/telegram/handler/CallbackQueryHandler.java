@@ -7,17 +7,25 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import com.ua.pohribnyi.fitadvisorbot.model.entity.GenerationJob;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
+import com.ua.pohribnyi.fitadvisorbot.model.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.model.enums.UserState;
+import com.ua.pohribnyi.fitadvisorbot.repository.ai.GenerationJobRepository;
 import com.ua.pohribnyi.fitadvisorbot.repository.user.UserProfileRepository;
+import com.ua.pohribnyi.fitadvisorbot.service.ai.GeminiApiClient;
+import com.ua.pohribnyi.fitadvisorbot.service.ai.GeminiPromptBuilderService;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.SyntheticDataService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
+import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageBuilderService;
+import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.TelegramViewService;
-import com.ua.pohribnyi.fitadvisorbot.service.user.UserService;
 import com.ua.pohribnyi.fitadvisorbot.service.user.UserSessionService;
+import com.ua.pohribnyi.fitadvisorbot.util.KeyboardBuilderService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,10 +36,15 @@ import lombok.extern.slf4j.Slf4j;
 public class CallbackQueryHandler {
 
 	private final TelegramViewService viewService;
-	private final UserService userService;
 	private final UserSessionService userSessionService;
 	private final UserProfileRepository userProfileRepository;
 	private final SyntheticDataService syntheticDataService;
+	private final GenerationJobRepository jobRepository;
+	private final GeminiApiClient geminiApiClient;
+	private final GeminiPromptBuilderService promptBuilderService;
+	private final MessageService messageService;
+	private final MessageBuilderService messageBuilder;
+	private final KeyboardBuilderService keyboardBuilder;
 
 	/**
 	 * Handles callbacks when user is in the DEFAULT state (e.g., Strava buttons).
@@ -51,84 +64,143 @@ public class CallbackQueryHandler {
 		Integer messageId = callbackQuery.getMessage().getMessageId();
 
 		try {
-            if (data.startsWith("onboarding:level:")) {
-                handleLevelSelection(data, chatId, messageId, user, bot);
-            } else if (data.startsWith("onboarding:goal:")) {
-                handleGoalSelection(data, chatId, messageId, user, bot);
-            } else {
-                log.warn("Unknown onboarding callback: {}", data);
-            }
-        } catch (Exception e) {
-            log.error("Error handling onboarding callback {}: {}", data, e.getMessage(), e);
-            bot.sendMessage(viewService.getGeneralErrorMessage(chatId));
-        } finally {
-            answerCallback(callbackQuery.getId(), bot);
-        }
-		
+			if (data.startsWith("onboarding:level:")) {
+				handleLevelSelection(data, chatId, messageId, user, bot);
+			} else if (data.startsWith("onboarding:goal:")) {
+				handleGoalSelection(data, chatId, messageId, user, bot);
+			} else if (data.startsWith("job:retry:")) { // <-- ДОДАТИ
+				handleJobRetry(data, chatId, messageId, user, bot);
+			} else {
+				log.warn("Unknown onboarding callback: {}", data);
+			}
+		} catch (Exception e) {
+			log.error("Error handling onboarding callback {}: {}", data, e.getMessage(), e);
+			bot.sendMessage(viewService.getGeneralErrorMessage(chatId));
+		} finally {
+			answerCallback(callbackQuery.getId(), bot);
+		}
+
 	}
 
-	private void handleLevelSelection(String data, Long chatId, Integer messageId, User user, FitnessAdvisorBotService bot) throws TelegramApiException {
-        String level = extractValue(data);
-        
-        saveProfileLevel(user, level);
-        userSessionService.setState(user, UserState.AWAITING_PROFILE_GOAL);
-        
-        EditMessageText nextQuestion = viewService.getOnboardingGoalQuestion(chatId, messageId);
-        bot.execute(nextQuestion);
-        
-        log.info("User {} selected level: {}", user.getId(), level);
-    }
+	private void handleLevelSelection(String data, Long chatId, Integer messageId, User user,
+			FitnessAdvisorBotService bot) throws TelegramApiException {
+		String level = extractValue(data);
 
-    private void handleGoalSelection(String data, Long chatId, Integer messageId, User user, FitnessAdvisorBotService bot) {
-        String goal = extractValue(data);
+		saveProfileLevel(user, level);
+		userSessionService.setState(user, UserState.AWAITING_PROFILE_GOAL);
+
+		EditMessageText nextQuestion = viewService.getOnboardingGoalQuestion(chatId, messageId);
+		bot.execute(nextQuestion);
+
+		log.info("User {} selected level: {}", user.getId(), level);
+	}
+
+	private void handleGoalSelection(String data, Long chatId, Integer messageId, User user,
+			FitnessAdvisorBotService bot) {
+		String goal = extractValue(data);
 
 		UserProfile profile = saveProfileGoal(user, goal);
 		userSessionService.setState(user, UserState.ONBOARDING_COMPLETED);
 
-		// 2. This call is fast. It just creates a PENDING job.
-		syntheticDataService.triggerHistoryGeneration(user, profile); // Now 'profile' exists
-
-		log.info("Triggered async history generation for user {}", user.getId());
-
+		// 1. Видаляємо повідомлення з опитуванням
 		deleteMessage(chatId, messageId, bot);
-		SendMessage finalMessage = viewService.getOnboardingCompletedMessage(chatId);
-		log.info("Onboarding completed for user {}. Goal: {}", user.getId(), goal);
-		bot.sendMessage(finalMessage);
+
+		try {
+			// 2. Створюємо НОВЕ повідомлення "Зачекайте..."
+			SendMessage waitMessage = viewService.getGenerationWaitMessage(chatId);
+
+			// 3. Надсилаємо його через НОВИЙ метод, який кидає виняток
+			Message sentMessage = bot.executeAndReturn(waitMessage);
+			Integer notificationMessageId = sentMessage.getMessageId();
+
+			// 4. Запускаємо асинхронний процес з ID для сповіщення
+			syntheticDataService.triggerHistoryGeneration(user, profile, chatId, notificationMessageId);
+
+			// 2. This call is fast. It just creates a PENDING job.
+			syntheticDataService.triggerHistoryGeneration(user, profile, chatId, messageId); // Now 'profile' exists
+			log.info("Triggered async history generation for user {}", user.getId());
+
+		} catch (Exception e) {
+			log.error("Failed to send wait message or trigger job: {}", e.getMessage(), e);
+			bot.sendMessage(viewService.getGeneralErrorMessage(chatId));
+		}
+
+		/*
+		 * deleteMessage(chatId, messageId, bot); SendMessage finalMessage =
+		 * viewService.getOnboardingCompletedMessage(chatId);
+		 * log.info("Onboarding completed for user {}. Goal: {}", user.getId(), goal);
+		 * bot.sendMessage(finalMessage);
+		 */
 	}
 
-    private String extractValue(String data) {
-        String[] parts = data.split(":");
-        return parts.length > 2 ? parts[2] : "";
-    }
+	private String extractValue(String data) {
+		String[] parts = data.split(":");
+		return parts.length > 2 ? parts[2] : "";
+	}
 
-    @Transactional
-    private void saveProfileLevel(User user, String level) {
-        UserProfile profile = userProfileRepository.findByUser(user)
-                .orElse(new UserProfile());
-        profile.setUser(user);
-        profile.setLevel(level);
-        userProfileRepository.save(profile);
-    }
+	@Transactional
+	private void saveProfileLevel(User user, String level) {
+		UserProfile profile = userProfileRepository.findByUser(user).orElse(new UserProfile());
+		profile.setUser(user);
+		profile.setLevel(level);
+		userProfileRepository.save(profile);
+	}
 
-    @Transactional
-    private UserProfile saveProfileGoal(User user, String goal) {
+	@Transactional
+	private UserProfile saveProfileGoal(User user, String goal) {
 		UserProfile profile = userProfileRepository.findByUser(user)
 				.orElseThrow(() -> new IllegalStateException("UserProfile not found for user " + user.getId()));
 		profile.setGoal(goal);
 		return userProfileRepository.save(profile);
 	}
 
-    private void deleteMessage(Long chatId, Integer messageId, FitnessAdvisorBotService bot) {
-        try {
-            bot.execute(DeleteMessage.builder()
-                    .chatId(chatId)
-                    .messageId(messageId)
-                    .build());
-        } catch (Exception e) {
-            log.warn("Failed to delete message {}: {}", messageId, e.getMessage());
-        }
-    }
-	
+	@Transactional
+	private void handleJobRetry(String data, Long chatId, Integer messageId, User user, FitnessAdvisorBotService bot) {
+		Long jobId = Long.parseLong(data.split(":")[2]);
+		String lang = user.getLanguageCode();
+
+		GenerationJob job = jobRepository.findById(jobId)
+				.orElseThrow(() -> new IllegalStateException("Job not found for retry: " + jobId));
+
+		// 1. Редагуємо повідомлення про помилку назад на "В процесі"
+		String text = messageService.getMessage("onboarding.job.started", lang);
+		EditMessageText waitMsg = messageBuilder.createEditMessage(chatId, messageId, text);
+		// Прибираємо клавіатуру "Повторити"
+		waitMsg.setReplyMarkup(null);
+
+		try {
+			bot.execute(waitMsg);
+		} catch (TelegramApiException e) {
+			log.warn("Failed to edit message for retry: {}", e.getMessage());
+		}
+
+		// 2. Очищуємо статус помилки і готуємо до повторного запуску
+		job.setStatus(JobStatus.PENDING);
+		job.setErrorMessage(null);
+		job.setErrorDetails(null);
+		job.setErrorCode(null);
+		jobRepository.save(job); // Зберігаємо PENDING
+
+		// 3. Отримуємо профіль і запускаємо АПІ
+		UserProfile profile = userProfileRepository.findByUser(user)
+				.orElseThrow(() -> new IllegalStateException("Profile not found for retry"));
+
+		String prompt = promptBuilderService.buildOnboardingPrompt(profile);
+
+		// Запускаємо воркер 1 (Gemini) знову
+		geminiApiClient.generateAndStageHistory(job.getId(), prompt);
+
+		log.info("Retrying job {} for user {}", jobId, user.getId());
+	}
+
+	private void deleteMessage(Long chatId, Integer messageId, FitnessAdvisorBotService bot) {
+		try {
+			bot.execute(DeleteMessage.builder().chatId(chatId).messageId(messageId).build());
+		} catch (Exception e) {
+			log.warn("Failed to delete message {}: {}", messageId, e.getMessage());
+		}
+	}
+
 	private void answerCallback(String callbackQueryId, FitnessAdvisorBotService bot) {
 		try {
 			bot.execute(AnswerCallbackQuery.builder().callbackQueryId(callbackQueryId).build());

@@ -89,6 +89,13 @@ public class TelegramViewService {
 		return messageBuilder.createMessageWithKeyboard(chatId, text, keyboardBuilder.createMainMenuKeyboard(lang));
 	}
 
+	public SendMessage getGenerationWaitMessage(Long chatId) {
+		String lang = messageService.getLangCode(chatId);
+		String text = escapeMarkdownV2(messageService.getMessage("onboarding.job.started", lang));
+		return messageBuilder.createMessage(chatId, text);
+	}
+	
+	
 	/**
 	 * General error message.
 	 */
@@ -244,7 +251,7 @@ public class TelegramViewService {
 		return messageService.getMessage("format.calories.kcal", lang, calories);
 	}
 
-	private static String escapeMarkdownV2(String text) {
+	public static String escapeMarkdownV2(String text) {
 		if (text == null || text.isEmpty()) {
 			return text;
 		}

@@ -83,4 +83,12 @@ public class KeyboardBuilderService {
 		return InlineKeyboardMarkup.builder()
 				.keyboardRow(List.of(InlineKeyboardButton.builder().text(buttonText).url(url).build())).build();
 	}
+
+	public InlineKeyboardMarkup createJobRetryKeyboard(String lang, Long jobId) {
+		return InlineKeyboardMarkup.builder()
+				.keyboardRow(List
+						.of(InlineKeyboardButton.builder().text(messageService.getMessage("onboarding.job.retry", lang))
+								.callbackData("job:retry:" + jobId).build()))
+				.build();
+	}
 }
