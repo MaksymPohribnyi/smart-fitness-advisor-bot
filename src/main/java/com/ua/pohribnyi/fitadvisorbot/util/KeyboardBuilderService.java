@@ -91,4 +91,16 @@ public class KeyboardBuilderService {
 								.callbackData("job:retry:" + jobId).build()))
 				.build();
 	}
+
+	public InlineKeyboardMarkup createAgeSelectionKeyboard(String lang) {
+		return InlineKeyboardMarkup.builder()
+				.keyboardRow(
+						List.of(InlineKeyboardButton.builder().text("18-25").callbackData("onboarding:age:21").build(),
+								InlineKeyboardButton.builder().text("26-35").callbackData("onboarding:age:30").build()))
+				.keyboardRow(
+						List.of(InlineKeyboardButton.builder().text("36-45").callbackData("onboarding:age:40").build(),
+								InlineKeyboardButton.builder().text("46+").callbackData("onboarding:age:50").build()))
+				.build();
+	}
+	
 }

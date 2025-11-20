@@ -9,9 +9,11 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageTe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.GenerationJob;
 import com.ua.pohribnyi.fitadvisorbot.model.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.repository.ai.GenerationJobRepository;
+import com.ua.pohribnyi.fitadvisorbot.service.analytics.FitnessAnalyticsService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageBuilderService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;
@@ -33,7 +35,8 @@ public class JobNotificationService {
 	private final MessageService messageService;
 	private final MessageBuilderService messageBuilder;
 	private final KeyboardBuilderService keyboardBuilder;
-
+	private final FitnessAnalyticsService analyticsService;
+	
 	/**
 	 * Listens for the completion of a job processing task.
 	 * Fires AFTER the worker's transaction has committed.
@@ -48,7 +51,7 @@ public class JobNotificationService {
 
 		Long chatId = job.getUserChatId();
 		Integer messageId = job.getNotificationMessageId();
-		String lang = job.getUser().getLanguageCode(); // Отримуємо мову з юзера
+		String lang = job.getUser().getLanguageCode();
 
 		if (chatId == null || messageId == null) {
 			log.warn("Job {} has no chatId or messageId, cannot notify user.", job.getId());
@@ -62,9 +65,9 @@ public class JobNotificationService {
 				EditMessageText successMsg = messageBuilder.createEditMessage(chatId, messageId, text);
 				bot.execute(successMsg); 
 
-				// Send a new message with the main menu
-				SendMessage welcomeBackMessage = viewService.getWelcomeBackMessage(chatId, job.getUser().getFirstName());
-				bot.sendMessage(welcomeBackMessage);
+                PeriodReportDto report = analyticsService.generateOnboardingReport(job.getUser());
+                SendMessage reportMsg = viewService.getAnalyticsReportMessage(chatId, report);
+                bot.sendMessage(reportMsg);
 
 			} else if (event.getStatus() == JobStatus.FAILED) {
 				// FAILURE

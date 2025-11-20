@@ -48,7 +48,6 @@ public class GenerationJobUpdaterService {
 				.orElseThrow(() -> new IllegalStateException("Job not found: " + jobId));
 		// Step 1: Save data
 		job.stageResponse(cleanedJson);
-		jobRepository.save(job);
 		// Step 2: Publish event (after TX commits)
 		eventPublisher.publishEvent(new JobDownloadedEvent(this, jobId));
 	}

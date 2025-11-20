@@ -50,6 +50,7 @@ public class TelegramUpdateDispatcher {
 			switch (activeState) {
 			case ONBOARDING_START:
 			case AWAITING_PROFILE_LEVEL:
+			case AWAITING_PROFILE_AGE:
 			case AWAITING_PROFILE_GOAL:
 				// Onboarding flow is handled by CallbackQueryHandler
 				if (update.hasCallbackQuery()) {
@@ -60,7 +61,6 @@ public class TelegramUpdateDispatcher {
 					// (Optional: send a message "Please use the buttons")
 				}
 				break;
-
 			// (Future states for Diary)
 			// case AWAITING_DIARY_MOOD:
 			// ...

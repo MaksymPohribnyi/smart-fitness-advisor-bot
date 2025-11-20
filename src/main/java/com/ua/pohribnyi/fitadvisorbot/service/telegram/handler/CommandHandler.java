@@ -5,6 +5,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
+import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 import com.ua.pohribnyi.fitadvisorbot.model.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;
@@ -37,7 +38,6 @@ public class CommandHandler {
             // Check the user's *true* state
             UserState currentState = userSessionService.findOrCreateSession(user).getState();
             
-            SendMessage response;
             if (currentState == UserState.DEFAULT || currentState == UserState.ONBOARDING_COMPLETED) {
                 // User is already registered, just send welcome back
             	handleStartForExistingUser(chatId, user, bot);
@@ -61,7 +61,7 @@ public class CommandHandler {
         bot.sendMessage(response);
         
     }
-
+    
 	private void handleStartForExistingUser(Long chatId, User user, FitnessAdvisorBotService bot) {
 		userSessionService.setState(user, UserState.DEFAULT);
 		SendMessage response = viewService.getWelcomeBackMessage(chatId, user.getFirstName());

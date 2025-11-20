@@ -46,12 +46,6 @@ public class User {
 	@Column(name = "language_code")
 	private String languageCode;
 	
-	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-	private UserSession session;
-
-	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-	private UserProfile userProfile;
-	
 	/*
 	 * @Column(name = "is_active") private Boolean isActive = true;
 	 * 

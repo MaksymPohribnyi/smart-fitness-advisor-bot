@@ -11,7 +11,7 @@ public class MessageSourceConfig {
 	@Bean("yamlMessageSource")
 	public MessageSource yamlMessageSource(ResourceLoader resourceLoader) {
 		YamlMessageSource messageSource = new YamlMessageSource();
-		messageSource.setBasename("classpath:messages/messages");
+		messageSource.setBasenames("classpath:messages/messages", "classpath:messages/analytics");
 		messageSource.setDefaultEncoding("UTF-8");
 		messageSource.setUseCodeAsDefaultMessage(true);
 		messageSource.setFallbackToSystemLocale(false);

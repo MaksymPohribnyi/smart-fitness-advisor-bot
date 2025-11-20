@@ -44,7 +44,6 @@ public class CallbackQueryHandler {
 	private final GeminiPromptBuilderService promptBuilderService;
 	private final MessageService messageService;
 	private final MessageBuilderService messageBuilder;
-	private final KeyboardBuilderService keyboardBuilder;
 
 	/**
 	 * Handles callbacks when user is in the DEFAULT state (e.g., Strava buttons).
@@ -68,7 +67,9 @@ public class CallbackQueryHandler {
 				handleLevelSelection(data, chatId, messageId, user, bot);
 			} else if (data.startsWith("onboarding:goal:")) {
 				handleGoalSelection(data, chatId, messageId, user, bot);
-			} else if (data.startsWith("job:retry:")) { // <-- ДОДАТИ
+			} else if (data.startsWith("onboarding:age:")) { 
+		        handleAgeSelection(data, chatId, messageId, user, bot);
+			} else if (data.startsWith("job:retry:")) {
 				handleJobRetry(data, chatId, messageId, user, bot);
 			} else {
 				log.warn("Unknown onboarding callback: {}", data);
@@ -96,43 +97,48 @@ public class CallbackQueryHandler {
 	}
 
 	private void handleGoalSelection(String data, Long chatId, Integer messageId, User user,
-			FitnessAdvisorBotService bot) {
+			FitnessAdvisorBotService bot) throws TelegramApiException {
 		String goal = extractValue(data);
+		saveProfileGoal(user, goal);
 
-		UserProfile profile = saveProfileGoal(user, goal);
-		userSessionService.setState(user, UserState.ONBOARDING_COMPLETED);
+		userSessionService.setState(user, UserState.AWAITING_PROFILE_AGE);
+		EditMessageText ageQuestion = viewService.getOnboardingAgeQuestion(chatId, messageId);
+		bot.execute(ageQuestion);
 
-		// 1. Видаляємо повідомлення з опитуванням
-		deleteMessage(chatId, messageId, bot);
-
-		try {
-			// 2. Створюємо НОВЕ повідомлення "Зачекайте..."
-			SendMessage waitMessage = viewService.getGenerationWaitMessage(chatId);
-
-			// 3. Надсилаємо його через НОВИЙ метод, який кидає виняток
-			Message sentMessage = bot.executeAndReturn(waitMessage);
-			Integer notificationMessageId = sentMessage.getMessageId();
-
-			// 4. Запускаємо асинхронний процес з ID для сповіщення
-			syntheticDataService.triggerHistoryGeneration(user, profile, chatId, notificationMessageId);
-
-			// 2. This call is fast. It just creates a PENDING job.
-			syntheticDataService.triggerHistoryGeneration(user, profile, chatId, messageId); // Now 'profile' exists
-			log.info("Triggered async history generation for user {}", user.getId());
-
-		} catch (Exception e) {
-			log.error("Failed to send wait message or trigger job: {}", e.getMessage(), e);
-			bot.sendMessage(viewService.getGeneralErrorMessage(chatId));
-		}
+		log.info("User {} selected goal: {}. Asking for age.", user.getId(), goal);
 
 		/*
-		 * deleteMessage(chatId, messageId, bot); SendMessage finalMessage =
-		 * viewService.getOnboardingCompletedMessage(chatId);
-		 * log.info("Onboarding completed for user {}. Goal: {}", user.getId(), goal);
-		 * bot.sendMessage(finalMessage);
+		 * try { // 2. Створюємо НОВЕ повідомлення "Зачекайте..." SendMessage
+		 * waitMessage = viewService.getGenerationWaitMessage(chatId);
+		 * 
+		 * // 3. Надсилаємо його через НОВИЙ метод, який кидає виняток Message
+		 * sentMessage = bot.executeAndReturn(waitMessage); Integer
+		 * notificationMessageId = sentMessage.getMessageId();
+		 * 
+		 * // 4. This call is fast. It just creates a PENDING job.
+		 * syntheticDataService.triggerHistoryGeneration(user, profile, chatId,
+		 * notificationMessageId);
+		 * log.info("Triggered async history generation for user {}", user.getId());
+		 * 
+		 * } catch (Exception e) {
+		 * log.error("Failed to send wait message or trigger job: {}", e.getMessage(),
+		 * e); bot.sendMessage(viewService.getGeneralErrorMessage(chatId)); }
 		 */
+
 	}
 
+	
+	private void handleAgeSelection(String data, Long chatId, Integer messageId, User user, FitnessAdvisorBotService bot) throws TelegramApiException {
+	    Integer age = Integer.parseInt(extractValue(data));
+	    
+	    UserProfile profile = saveProfileAge(user, age);
+	    userSessionService.setState(user, UserState.ONBOARDING_COMPLETED);
+	    
+	    deleteMessage(chatId, messageId, bot);
+	    Message sentMessage = bot.executeAndReturn(viewService.getGenerationWaitMessage(chatId));
+	    syntheticDataService.triggerHistoryGeneration(user, profile, chatId, sentMessage.getMessageId());
+	}
+	
 	private String extractValue(String data) {
 		String[] parts = data.split(":");
 		return parts.length > 2 ? parts[2] : "";
@@ -154,6 +160,14 @@ public class CallbackQueryHandler {
 		return userProfileRepository.save(profile);
 	}
 
+	@Transactional
+	private UserProfile saveProfileAge(User user, int age) {
+		UserProfile profile = userProfileRepository.findByUser(user)
+				.orElseThrow(() -> new IllegalStateException("UserProfile not found for user " + user.getId()));
+		profile.setAge(age);
+		return userProfileRepository.save(profile);
+	}
+	
 	@Transactional
 	private void handleJobRetry(String data, Long chatId, Integer messageId, User user, FitnessAdvisorBotService bot) {
 		Long jobId = Long.parseLong(data.split(":")[2]);

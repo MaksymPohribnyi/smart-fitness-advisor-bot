@@ -1,5 +1,7 @@
 package com.ua.pohribnyi.fitadvisorbot.service.ai;
 
+import java.time.LocalDate;
+
 import org.springframework.stereotype.Service;
 
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
@@ -14,7 +16,7 @@ public class GeminiPromptBuilderService {
 			- Activity Level: %s
 			- Goal: %s
 
-			TASK: Generate 60-day fitness history ending today.
+			TASK: Generate 60-day fitness history ending on %s.
 
 			STRICT OUTPUT FORMAT:
 			{
@@ -62,8 +64,9 @@ public class GeminiPromptBuilderService {
 			   - Pulse variations: ±5 bpm day-to-day for same effort
 
 			4. DATE CONSISTENCY:
-			   - Start date: 60 days ago from today
-			   - Activities must match dailyMetrics dates
+			   - The last entry MUST be on %s (today).
+               - Go backwards exactly 60 days.
+               - Activities must match dailyMetrics dates.
 			   - No future dates
 
 			5. VALUE CONSTRAINTS:
@@ -85,7 +88,8 @@ public class GeminiPromptBuilderService {
 	public String buildOnboardingPrompt(UserProfile profile) {
 		String levelDescription = profile.getLevel();
 		String goalDescription = profile.getGoal();
+		LocalDate today = LocalDate.now();
 
-		return String.format(PROMPT_TEMPLATE, levelDescription, goalDescription, goalDescription);
+		return String.format(PROMPT_TEMPLATE, levelDescription, goalDescription, today, goalDescription, today);
 	}
 }

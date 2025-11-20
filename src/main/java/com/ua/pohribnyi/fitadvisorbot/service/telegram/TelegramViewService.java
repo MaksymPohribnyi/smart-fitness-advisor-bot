@@ -2,6 +2,7 @@ package com.ua.pohribnyi.fitadvisorbot.service.telegram;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -12,6 +13,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
+import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto;
+import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto.MetricResult;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.strava.StravaActivityDto;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.strava.StravaAthleteDto;
 import com.ua.pohribnyi.fitadvisorbot.util.KeyboardBuilderService;
@@ -29,7 +32,7 @@ public class TelegramViewService {
 	private final KeyboardBuilderService keyboardBuilder;
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 	private static final String SPECIAL_CHARS = "_*[]()~`>#+-=|{}.!\\";
-    private static final String ALLOWED_MARKDOWN_CHARS = "*_~`";
+	private static final String ALLOWED_MARKDOWN_CHARS = "*_~`";
 
 	/**
 	 * Message for existing users (returning to the bot). Sends a welcome message
@@ -41,8 +44,7 @@ public class TelegramViewService {
 
 		String text = escapeMarkdownV2(messageService.getMessage("bot.welcome.already_connected", lang, name));
 
-		return messageBuilder.createMessageWithKeyboard(chatId, text,
-				keyboardBuilder.createMainMenuKeyboard(lang));
+		return messageBuilder.createMessageWithKeyboard(chatId, text, keyboardBuilder.createMainMenuKeyboard(lang));
 	}
 
 	/**
@@ -94,8 +96,7 @@ public class TelegramViewService {
 		String text = escapeMarkdownV2(messageService.getMessage("onboarding.job.started", lang));
 		return messageBuilder.createMessage(chatId, text);
 	}
-	
-	
+
 	/**
 	 * General error message.
 	 */
@@ -158,6 +159,76 @@ public class TelegramViewService {
 		String text = formatActivitiesList(activities, lang);
 
 		return SendMessage.builder().chatId(chatId).text(text).parseMode("MarkdownV2").build();
+	}
+
+	public SendMessage getInvalidAgeMessage(Long chatId) {
+		String lang = messageService.getLangCode(chatId);
+		String text = escapeMarkdownV2(messageService.getMessage("onboarding.age.invalid", lang));
+		return messageBuilder.createMessage(chatId, text);
+	}
+
+	public EditMessageText getOnboardingAgeQuestion(Long chatId, Integer messageId) {
+		String lang = messageService.getLangCode(chatId);
+		String text = escapeMarkdownV2(messageService.getMessage("onboarding.age.question", lang));
+		return messageBuilder.createEditMessageWithKeyboard(chatId, messageId, text,
+				keyboardBuilder.createAgeSelectionKeyboard(lang));
+	}
+
+	public SendMessage getAnalyticsReportMessage(Long chatId, PeriodReportDto report) {
+		String lang = messageService.getLangCode(chatId);
+		StringBuilder sb = new StringBuilder();
+
+		String goalTitle = messageService.getMessage(report.getGoalName(), lang);
+		String consistencyVerdict = messageService.getMessage(report.getConsistencyVerdictKey(), lang);
+
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.header", lang, report.getPeriodName()))).append("\n\n");
+
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.summary_section", lang, goalTitle, consistencyVerdict,
+				report.getConsistencyScore()))).append("\n\n");
+		
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.base_stats_section", lang, report.getTotalActivities(),
+				String.format(Locale.US, "%.1f", report.getTotalDistanceKm()),
+				String.format(Locale.US, "%.1f", report.getTotalDurationHours())))).append("\n\n");
+
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.insights_header", lang))).append("\n");
+
+		// Loop through metrics using Line Template
+		for (MetricResult metric : report.getAdvancedMetrics()) {
+			String titleKey = "analytics.metric.title." + metric.getType().name();
+			String descKey = "analytics.metric.desc." + metric.getType().name();
+
+			String title = messageService.getMessage(titleKey, lang);
+			String desc = messageService.getMessage(descKey, lang);
+
+			// Template: "{0} *{1}*: {2}\n _{3}_"
+			String line = escapeMarkdownV2(messageService.getMessage("analytics.report.metric_line", 
+					lang, 
+					metric.getStatusEmoji(), 
+					title, // {1}
+					metric.getFormattedValue(), // {2}
+					desc // {3}
+			));
+			sb.append(line).append("\n");
+		}
+
+		// Footer
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.footer", lang)));
+
+		return messageBuilder.createMessage(chatId, sb.toString());
+	}
+
+	public static String escapeMarkdownV2(String text) {
+		if (text == null || text.isEmpty()) {
+			return text;
+		}
+		StringBuilder result = new StringBuilder(text.length() * 2);
+		for (char c : text.toCharArray()) {
+			if (SPECIAL_CHARS.indexOf(c) >= 0 && ALLOWED_MARKDOWN_CHARS.indexOf(c) < 0) {
+				result.append('\\');
+			}
+			result.append(c);
+		}
+		return result.toString();
 	}
 
 	private String formatActivitiesList(List<StravaActivityDto> activities, String lang) {
@@ -251,17 +322,4 @@ public class TelegramViewService {
 		return messageService.getMessage("format.calories.kcal", lang, calories);
 	}
 
-	public static String escapeMarkdownV2(String text) {
-		if (text == null || text.isEmpty()) {
-			return text;
-		}
-		StringBuilder result = new StringBuilder(text.length() * 2);
-		for (char c : text.toCharArray()) {
-			if (SPECIAL_CHARS.indexOf(c) >= 0 && ALLOWED_MARKDOWN_CHARS.indexOf(c) < 0) {
-				result.append('\\');
-			}
-			result.append(c);
-		}
-		return result.toString();
-	}
 }

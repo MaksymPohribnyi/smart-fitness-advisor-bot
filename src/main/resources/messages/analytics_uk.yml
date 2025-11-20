@@ -1,0 +1,40 @@
+analytics:
+  report:
+    header: "📊 *{0}*"
+    
+    summary_section: |
+      🎯 Ціль: {0}
+      🗓 Дисципліна: *{1}* ({2}%)
+
+    base_stats_section: |
+      🔢 *База:*
+      • Тренувань: `{0}`
+      • Дистанція: `{1} км`
+      • Час: `{2} год`
+
+    insights_header: "🧠 *Smart Insights:*"
+    
+    metric_line: "{0} *{1}*: {2}\n   _{3}_"
+    
+    footer: "\n_Це аналіз твоїх даних за 60 днів._"
+
+  metric:
+    title:
+      FAT_FUEL_CONSISTENCY: "Fat-Fuel Consistency"
+      METABOLIC_MOMENTUM: "Metabolic Momentum"
+      RECOVERY_TO_BURN: "Recovery Ratio"
+    desc:
+      FAT_FUEL_CONSISTENCY: "Днів у зоні максимального спалення жиру"
+      METABOLIC_MOMENTUM: "Тренд твоєї побутової активності"
+      RECOVERY_TO_BURN: "Годин сну на кожні 100 спалених ккал"
+
+  consistency:
+    iron: "🏆 Залізна Дисципліна"
+    good: "🔥 Чудовий Темп"
+    start: "👟 Хороший Старт"
+    lazy: "💤 Час прокидатися"
+    
+  status:
+    good: "🟢"
+    avg: "🟡"
+    bad: "🔴"

@@ -7,8 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ua.pohribnyi.fitadvisorbot.model.dto.UserDto;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
+import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 import com.ua.pohribnyi.fitadvisorbot.repository.strava.StravaTokenRepository;
+import com.ua.pohribnyi.fitadvisorbot.repository.user.UserProfileRepository;
 import com.ua.pohribnyi.fitadvisorbot.repository.user.UserRepository;
+import com.ua.pohribnyi.fitadvisorbot.service.ai.SyntheticDataService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 public class UserService {
 
 	private final UserRepository userRepository;
+	private final UserProfileRepository userProfileRepository; 
+    private final SyntheticDataService syntheticDataService;
 	private final StravaTokenRepository stravaTokenRepository;
 	private final UserSessionService userSessionService;
 
