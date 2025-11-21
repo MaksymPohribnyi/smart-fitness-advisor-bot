@@ -17,6 +17,7 @@ import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 import com.ua.pohribnyi.fitadvisorbot.repository.data.ActivityRepository;
 import com.ua.pohribnyi.fitadvisorbot.repository.data.DailyMetricRepository;
 import com.ua.pohribnyi.fitadvisorbot.repository.user.UserProfileRepository;
+import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,11 +34,11 @@ public class FitnessAnalyticsService {
 
 	@Transactional(readOnly = true)
 	public PeriodReportDto generateOnboardingReport(User user) {
-		return generateReport(user, Duration.ofDays(60), "Стартовий аналіз (60 днів)");
+		return generateReport(user, Duration.ofDays(60), "analytics.report.period.initial");
 	}
 
 	@Transactional(readOnly = true)
-	public PeriodReportDto generateReport(User user, Duration duration, String periodName) {
+	public PeriodReportDto generateReport(User user, Duration duration, String periodKey) {
 		LocalDateTime sinceDateTime = LocalDateTime.now().minus(duration);
 		LocalDate sinceDate = LocalDate.now().minusDays(duration.toDays());
 
@@ -45,6 +46,7 @@ public class FitnessAnalyticsService {
 		List<Activity> activities = activityRepository.findActivitiesByUserAndDateAfter(user, sinceDateTime);
 		List<DailyMetric> dailyMetrics = dailyMetricRepository.findMetricsByUserAndDateAfter(user, sinceDate);
 
+		
 		int totalActivities = activities.size();
 		double totalDistKm = activities.stream().mapToDouble(Activity::getDistanceMeters).sum() / 1000.0;
 		double totalDurationHours = activities.stream().mapToDouble(Activity::getDurationSeconds).sum() / 3600.0;
@@ -61,12 +63,27 @@ public class FitnessAnalyticsService {
 		// 3. Advanced Metrics
 		List<MetricResult> advancedMetrics = strategy.calculateMetrics(user, activities, dailyMetrics);
 
-		// 4. Consistency Score
+		// 4. Consistency
 		int idealWorkouts = (int) (duration.toDays() / 7.0 * 3.0);
 		int consistencyScore = idealWorkouts > 0 ? Math.min(100, (totalActivities * 100) / idealWorkouts) : 0;
 
+		// 5. Expert Logic (Simple Rule Engine)
+		String praiseKey;
+		String actionKey;
+
+		if (consistencyScore >= 80) {
+			praiseKey = "analytics.expert.praise.consistency";
+			actionKey = "analytics.expert.action.progression";
+		} else if (consistencyScore >= 40) {
+			praiseKey = "analytics.expert.praise.balance";
+			actionKey = "analytics.expert.action.zone2";
+		} else {
+			praiseKey = "analytics.expert.praise.start";
+			actionKey = "analytics.expert.action.sleep";
+		}
+
 		return PeriodReportDto.builder()
-				.periodName(periodName)
+				.periodKey(periodKey)
 				.goalName(strategy.getGoalTitleKey())
 				.totalActivities(totalActivities)
 				.totalDistanceKm(totalDistKm)
@@ -74,6 +91,8 @@ public class FitnessAnalyticsService {
 				.consistencyScore(consistencyScore)
 				.consistencyVerdictKey(getConsistencyVerdictKey(consistencyScore))
 				.advancedMetrics(advancedMetrics)
+				.expertPraiseKey(praiseKey)
+				.expertActionKey(actionKey)
 				.build();
 	}
 

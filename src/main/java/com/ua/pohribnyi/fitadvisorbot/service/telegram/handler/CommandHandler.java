@@ -1,16 +1,18 @@
 package com.ua.pohribnyi.fitadvisorbot.service.telegram.handler;
 
+import java.time.Duration;
+
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
+import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
-import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 import com.ua.pohribnyi.fitadvisorbot.model.enums.UserState;
+import com.ua.pohribnyi.fitadvisorbot.service.analytics.FitnessAnalyticsService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.TelegramViewService;
-import com.ua.pohribnyi.fitadvisorbot.service.user.UserService;
 import com.ua.pohribnyi.fitadvisorbot.service.user.UserSessionService;
 
 import lombok.RequiredArgsConstructor;
@@ -21,10 +23,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class CommandHandler {
 
-	private final UserService userService;
     private final TelegramViewService viewService;
     private final MessageService messageService;
     private final UserSessionService userSessionService;
+    private final FitnessAnalyticsService analyticsService;
 
     /**
      * Handles global commands that run regardless of state (e.g., /start).
@@ -83,7 +85,7 @@ public class CommandHandler {
 			if (commandText.equals(messageService.getMessage("menu.diary", lang))) {
 				return handleDiaryCommand(chatId, user);
 			} else if (commandText.equals(messageService.getMessage("menu.analytics", lang))) {
-				return handleAnalyticsCommand(chatId);
+				return handleAnalyticsCommand(chatId, user);
 			} else if (commandText.equals(messageService.getMessage("menu.settings", lang))) {
 				return handleSettingsCommand(chatId);
 			} else if (commandText.equals("/my_profile") || commandText.equals("/activities")) {
@@ -106,12 +108,10 @@ public class CommandHandler {
                 .build();
     }
 
-    private SendMessage handleAnalyticsCommand(Long chatId) {
-        // TODO: Implement analytics functionality
-        return SendMessage.builder()
-                .chatId(chatId.toString())
-                .text("Showing Analytics... (Not Implemented)")
-                .build();
+    private SendMessage handleAnalyticsCommand(Long chatId, User user) {
+        String periodKey = "analytics.report.period.weekly";
+        PeriodReportDto report = analyticsService.generateReport(user, Duration.ofDays(7), periodKey);
+        return viewService.getAnalyticsReportMessage(chatId, report);
     }
 
     private SendMessage handleSettingsCommand(Long chatId) {

@@ -11,7 +11,7 @@ import lombok.Data;
 @Builder
 public class PeriodReportDto {
 
-	private String periodName;
+	private String periodKey;
 	private String goalName; // e.g., "Weight Loss" (localized key)
 
 	// Base Stats
@@ -28,6 +28,9 @@ public class PeriodReportDto {
 
 	// Key textual insight (generated logic)
 	private String keyInsightKey;
+	
+	private String expertPraiseKey; 
+    private String expertActionKey;
 
 	@Data
 	@Builder

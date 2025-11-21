@@ -66,4 +66,25 @@ public class MathUtils {
 	public static double safeDivide(double value, double divisor) {
 		return divisor == 0 ? 0.0 : value / divisor;
 	}
+	
+	/**
+	 * Pearson Correlation Coefficient. Range: -1.0 to 1.0.
+	 */
+	public static double calculateCorrelation(List<Double> xs, List<Double> ys) {
+		if (xs.size() != ys.size() || xs.isEmpty())
+			return 0.0;
+
+		double sx = xs.stream().mapToDouble(x -> x).sum();
+		double sy = ys.stream().mapToDouble(y -> y).sum();
+		double sxx = xs.stream().mapToDouble(x -> x * x).sum();
+		double syy = ys.stream().mapToDouble(y -> y * y).sum();
+		double sxy = IntStream.range(0, xs.size()).mapToDouble(i -> xs.get(i) * ys.get(i)).sum();
+
+		int n = xs.size();
+		double num = n * sxy - sx * sy;
+		double den = Math.sqrt((n * sxx - sx * sx) * (n * syy - sy * sy));
+
+		return den == 0 ? 0 : num / den;
+	}
+	
 }

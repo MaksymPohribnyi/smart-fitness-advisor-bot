@@ -39,11 +39,12 @@ public class WeightLossStrategy implements GoalAnalyticsStrategy {
 
 	@Override
 	public List<MetricResult> calculateMetrics(User user, List<Activity> activities, List<DailyMetric> dailyMetrics) {
-		List<MetricResult> results = new ArrayList<>();
-		String lang = user.getLanguageCode();
-
+		
 		UserProfile profile = userProfileRepository.findByUser(user)
 				.orElseThrow(() -> new IllegalStateException("UserProfile required"));
+		
+		List<MetricResult> results = new ArrayList<>();
+		String lang = user.getLanguageCode();
 
 		var fatBurnZone = physiologyService.calculateFatBurnZone(profile);
 

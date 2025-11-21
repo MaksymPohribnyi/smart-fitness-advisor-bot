@@ -181,11 +181,16 @@ public class TelegramViewService {
 		String goalTitle = messageService.getMessage(report.getGoalName(), lang);
 		String consistencyVerdict = messageService.getMessage(report.getConsistencyVerdictKey(), lang);
 
-		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.header", lang, report.getPeriodName()))).append("\n\n");
+		String periodName = messageService.getMessage(report.getPeriodKey(), lang);
+		
+		// Header
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.header", lang, periodName))).append("\n\n");
 
+		// Summary section
 		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.summary_section", lang, goalTitle, consistencyVerdict,
 				report.getConsistencyScore()))).append("\n\n");
 		
+		// Stats
 		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.base_stats_section", lang, report.getTotalActivities(),
 				String.format(Locale.US, "%.1f", report.getTotalDistanceKm()),
 				String.format(Locale.US, "%.1f", report.getTotalDurationHours())))).append("\n\n");
@@ -210,6 +215,14 @@ public class TelegramViewService {
 			));
 			sb.append(line).append("\n");
 		}
+		
+		// Expert Summary Block
+        String praise = messageService.getMessage(report.getExpertPraiseKey(), lang);
+        String action = messageService.getMessage(report.getExpertActionKey(), lang);
+        
+		String expertBlock = escapeMarkdownV2(
+				messageService.getMessage("analytics.report.expert_summary_section", lang, praise, action));
+        sb.append("\n").append(expertBlock).append("\n");
 
 		// Footer
 		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.footer", lang)));
