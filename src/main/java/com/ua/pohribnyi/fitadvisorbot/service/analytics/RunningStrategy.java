@@ -21,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RunningStrategy implements GoalAnalyticsStrategy {
 
-	private final UserProfileRepository userProfileRepository;
 	private final MessageService messageService;
 
 	@Override
@@ -35,10 +34,7 @@ public class RunningStrategy implements GoalAnalyticsStrategy {
 	}
 
 	@Override
-	public List<MetricResult> calculateMetrics(User user, List<Activity> activities, List<DailyMetric> dailyMetrics) {
-
-		UserProfile profile = userProfileRepository.findByUser(user)
-				.orElseThrow(() -> new IllegalStateException("UserProfile required"));
+	public List<MetricResult> calculateMetrics(User user,  UserProfile profile, List<Activity> activities, List<DailyMetric> dailyMetrics) {
 
 		List<MetricResult> results = new ArrayList<>();
 		String lang = user.getLanguageCode();

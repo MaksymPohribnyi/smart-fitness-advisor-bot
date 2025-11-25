@@ -11,9 +11,9 @@ import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyMetric;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 import com.ua.pohribnyi.fitadvisorbot.model.enums.AnalyticsMetricType;
-import com.ua.pohribnyi.fitadvisorbot.repository.user.UserProfileRepository;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;
 import com.ua.pohribnyi.fitadvisorbot.util.math.MathUtils;
+import com.ua.pohribnyi.fitadvisorbot.util.math.MetricThreshold;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,10 +22,30 @@ import lombok.RequiredArgsConstructor;
 public class WeightLossStrategy implements GoalAnalyticsStrategy {
 
 	private final UserPhysiologyService physiologyService;
-	private final UserProfileRepository userProfileRepository;
 	private final MessageService messageService;
 
 	private static final int MIN_ACTIVITY_DURATION_SEC = 1200;
+
+	// 1. Fat-Fuel (Ratio -> Level Key)
+	private static final List<MetricThreshold> FAT_FUEL_VALUES = List.of(
+            new MetricThreshold(0.0, "analytics.level.initial"),
+            new MetricThreshold(0.2, "analytics.level.developing"),
+            new MetricThreshold(0.5, "analytics.level.optimal")
+    );
+
+	// 2. Momentum (Slope -> Trend Key)
+	private static final List<MetricThreshold> MOMENTUM_VALUES = List.of(
+            new MetricThreshold(-Double.MAX_VALUE, "analytics.trend.down"),
+            new MetricThreshold(-10.0, "analytics.trend.stable"),
+            new MetricThreshold(10.0, "analytics.trend.up")
+    );
+
+	// 3. Recovery (Ratio -> Level Key)
+	private static final List<MetricThreshold> RECOVERY_VALUES = List.of(
+            new MetricThreshold(0.0, "analytics.level.low"),
+            new MetricThreshold(1.0, "analytics.level.normal"),
+            new MetricThreshold(1.5, "analytics.level.excellent")
+    );
 
 	@Override
 	public boolean supports(String goalCode) {
@@ -38,58 +58,94 @@ public class WeightLossStrategy implements GoalAnalyticsStrategy {
 	}
 
 	@Override
-	public List<MetricResult> calculateMetrics(User user, List<Activity> activities, List<DailyMetric> dailyMetrics) {
-		
-		UserProfile profile = userProfileRepository.findByUser(user)
-				.orElseThrow(() -> new IllegalStateException("UserProfile required"));
-		
+	public List<MetricResult> calculateMetrics(User user, UserProfile profile, List<Activity> activities,
+			List<DailyMetric> dailyMetrics) {
+
 		List<MetricResult> results = new ArrayList<>();
 		String lang = user.getLanguageCode();
 
-		var fatBurnZone = physiologyService.calculateFatBurnZone(profile);
-
 		// 1. Fat-Fuel Consistency
-		long fatBurnDays = activities.stream().filter(a -> a.getDurationSeconds() >= MIN_ACTIVITY_DURATION_SEC)
-				.filter(a -> fatBurnZone.contains(a.getAvgPulse())).count();
-
-		long totalDays = Math.max(dailyMetrics.size(), 1);
-
-		results.add(MetricResult.builder().type(AnalyticsMetricType.FAT_FUEL_CONSISTENCY)
-				.formattedValue(String.format("%d / %d", fatBurnDays, totalDays))
-				.statusEmoji(getConsistencyEmoji(fatBurnDays, totalDays, lang)).build());
+		results.add(calcFatFuel(profile, activities, lang));
 
 		// 2. Metabolic Momentum
-		List<Double> stepsHistory = dailyMetrics.stream().map(d -> (double) d.getDailyBaseSteps()).toList();
-		double slope = MathUtils.calculateSlope(stepsHistory);
-
-		String trendEmoji = slope > 5 ? messageService.getMessage("analytics.status.good", lang)
-				: (slope < -5 ? messageService.getMessage("analytics.status.bad", lang)
-						: messageService.getMessage("analytics.status.avg", lang));
-
-		results.add(MetricResult.builder().type(AnalyticsMetricType.METABOLIC_MOMENTUM)
-				.formattedValue(String.format("%.1f", slope)).statusEmoji(trendEmoji).build());
+		results.add(calcMetabolicMomentum(activities, dailyMetrics, lang));
 
 		// 3. Recovery-to-Burn Ratio
-		double avgSleep = dailyMetrics.stream().mapToDouble(DailyMetric::getSleepHours).average().orElse(0);
-		double avgCals = activities.stream().mapToDouble(Activity::getCaloriesBurned).average().orElse(1);
-
-		double ratio = MathUtils.safeDivide(avgSleep, avgCals / 100.0);
-
-		String ratioEmoji = ratio > 1.2 ? messageService.getMessage("analytics.status.good", lang)
-				: messageService.getMessage("analytics.status.bad", lang);
-
-		results.add(MetricResult.builder().type(AnalyticsMetricType.RECOVERY_TO_BURN)
-				.formattedValue(String.format("%.1f", ratio)).statusEmoji(ratioEmoji).build());
+		results.add(calcRecoveryRatio(activities, dailyMetrics, lang));
 
 		return results;
 	}
 
-	private String getConsistencyEmoji(long activeDays, long totalDays, String lang) {
-		double ratio = (double) activeDays / totalDays;
-		if (ratio > 0.4)
-			return messageService.getMessage("analytics.status.good", lang);
-		if (ratio > 0.2)
-			return messageService.getMessage("analytics.status.avg", lang);
-		return messageService.getMessage("analytics.status.bad", lang);
+	
+	private MetricResult calcFatFuel(UserProfile profile, List<Activity> activities, String lang) {
+		var fatBurnZone = physiologyService.calculateFatBurnZone(profile);
+		long fatBurnDays = activities.stream()
+				.filter(a -> a.getDurationSeconds() >= MIN_ACTIVITY_DURATION_SEC)
+				.filter(a -> fatBurnZone.contains(a.getAvgPulse()))
+				.count();
+
+		int totalActivities = Math.max(activities.size(), 1);
+        double fatBurnRatio = (double) fatBurnDays / totalActivities;
+		
+        return buildResult(
+                AnalyticsMetricType.FAT_FUEL_CONSISTENCY,
+                fatBurnRatio,
+                FAT_FUEL_VALUES,
+                "%.0f%%".formatted(fatBurnRatio * 100),
+                lang,
+                0.2, 0.5 // Thresholds: Avg >= 0.2, Good >= 0.5
+        );
+	}
+	
+	private MetricResult calcMetabolicMomentum(List<Activity> activities, List<DailyMetric> dailyMetrics, String lang) {
+		List<Double> stepsHistory = dailyMetrics.stream()
+                .map(d -> (double) d.getDailyBaseSteps())
+                .toList();
+        double slope = MathUtils.calculateSlope(stepsHistory);
+
+        return buildResult(
+                AnalyticsMetricType.METABOLIC_MOMENTUM,
+                slope,
+                MOMENTUM_VALUES,
+                "%+.0f".formatted(slope),
+                lang,
+                -10.0, 10.0 // Thresholds: Avg >= -10, Good >= 10
+        );
+	}
+	
+	private MetricResult calcRecoveryRatio(List<Activity> activities, List<DailyMetric> dailyMetrics, String lang) {
+		double avgSleep = dailyMetrics.stream().mapToDouble(DailyMetric::getSleepHours).average().orElse(0);
+		double avgCals = activities.stream().mapToDouble(Activity::getCaloriesBurned).average().orElse(1);
+		double ratio = (avgSleep / (avgCals / 100.0));
+
+		return buildResult(
+                AnalyticsMetricType.RECOVERY_TO_BURN,
+                ratio,
+                RECOVERY_VALUES,
+                "%.1f".formatted(ratio),
+                lang,
+                1.0, 1.5 // Thresholds: Avg >= 1.0, Good >= 1.5
+        );
+	}
+
+	private MetricResult buildResult(AnalyticsMetricType type, double value, List<MetricThreshold> rules,
+			String formattedNumb, String lang, double avgThreshold, double goodThreshdold) {
+
+		// 1. Pick Value Text
+		String valueKey = MetricThreshold.pick(value, rules);
+		String valueText = messageService.getMessage(valueKey, lang);
+
+		// 2. Determine Status Emoji (Standard Logic)
+		return MetricResult.builder()
+				.type(type)
+				.formattedValue(String.format("%s (%s)", valueText, formattedNumb))
+				.statusEmoji(getStatusEmoji(value, avgThreshold, goodThreshdold, lang))
+				.build();
+	}
+	
+	private String getStatusEmoji(double value, double avg, double good, String lang) {
+		String code = value >= good ? "analytics.status.good"
+				: value >= avg ? "analytics.status.avg" : "analytics.status.bad";
+		return messageService.getMessage(code, lang);
 	}
 }

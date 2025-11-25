@@ -42,6 +42,9 @@ public class FitnessAnalyticsService {
 		LocalDateTime sinceDateTime = LocalDateTime.now().minus(duration);
 		LocalDate sinceDate = LocalDate.now().minusDays(duration.toDays());
 
+		UserProfile profile = userProfileRepository.findByUser(user)
+                .orElseThrow(() -> new IllegalStateException("UserProfile required for analytics generation"));
+		
 		// 1. Base Metrics
 		List<Activity> activities = activityRepository.findActivitiesByUserAndDateAfter(user, sinceDateTime);
 		List<DailyMetric> dailyMetrics = dailyMetricRepository.findMetricsByUserAndDateAfter(user, sinceDate);
@@ -52,16 +55,18 @@ public class FitnessAnalyticsService {
 		double totalDurationHours = activities.stream().mapToDouble(Activity::getDurationSeconds).sum() / 3600.0;
 
 		// 2. Determine Strategy
-		UserProfile profile = userProfileRepository.findByUser(user).orElse(new UserProfile());
 		String goal = profile.getGoal() != null ? profile.getGoal() : "health";
 
-		GoalAnalyticsStrategy strategy = strategies.stream().filter(s -> s.supports(goal)).findFirst()
-				.orElse(strategies.stream().filter(s -> s.supports("lose_weight")).findFirst().orElseThrow()); // Fallback
-																												// to
-																												// LoseWeight
+		GoalAnalyticsStrategy strategy = strategies.stream()
+				.filter(s -> s.supports(goal))
+				.findFirst()
+				.orElse(strategies.stream()
+						.filter(s -> s.supports("lose_weight"))
+						.findFirst()
+						.orElseThrow(() -> new IllegalStateException("No strategies available"))); 
 
 		// 3. Advanced Metrics
-		List<MetricResult> advancedMetrics = strategy.calculateMetrics(user, activities, dailyMetrics);
+		List<MetricResult> advancedMetrics = strategy.calculateMetrics(user, profile, activities, dailyMetrics);
 
 		// 4. Consistency
 		int idealWorkouts = (int) (duration.toDays() / 7.0 * 3.0);

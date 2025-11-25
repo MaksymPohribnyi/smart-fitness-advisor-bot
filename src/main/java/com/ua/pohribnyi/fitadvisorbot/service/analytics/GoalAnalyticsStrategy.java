@@ -6,6 +6,7 @@ import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto.Metric
 import com.ua.pohribnyi.fitadvisorbot.model.entity.Activity;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyMetric;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
+import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 
 /**
  * Strategy interface for goal-oriented analytics. Each implementation handles a
@@ -23,7 +24,8 @@ public interface GoalAnalyticsStrategy {
 	/**
 	 * Calculates specific advanced metrics based on the goal.
 	 */
-	List<MetricResult> calculateMetrics(User user, List<Activity> activities, List<DailyMetric> dailyMetrics);
+	List<MetricResult> calculateMetrics(User user, UserProfile userProfile, List<Activity> activities,
+			List<DailyMetric> dailyMetrics);
 
 	/**
 	 * Returns the key for the goal title in messages.yml.

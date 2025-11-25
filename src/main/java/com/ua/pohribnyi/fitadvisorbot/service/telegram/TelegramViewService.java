@@ -32,7 +32,7 @@ public class TelegramViewService {
 	private final KeyboardBuilderService keyboardBuilder;
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 	private static final String SPECIAL_CHARS = "_*[]()~`>#+-=|{}.!\\";
-	private static final String ALLOWED_MARKDOWN_CHARS = "*_~`";
+	private static final String ALLOWED_MARKDOWN_CHARS = "*_`";
 
 	/**
 	 * Message for existing users (returning to the bot). Sends a welcome message
@@ -244,6 +244,21 @@ public class TelegramViewService {
 		return result.toString();
 	}
 
+	/**
+	 * Draws a text-based progress bar.
+	 * 0.7 -> [▓▓▓▓▓▓▓░░░] 70%
+	 */
+	private String drawProgressBar(double value, double max) {
+        int totalBars = 8; // concise for mobile
+        int filledBars = (int) ((value / max) * totalBars);
+        filledBars = Math.max(0, Math.min(filledBars, totalBars));
+        
+        StringBuilder bar = new StringBuilder();
+        bar.append("■".repeat(filledBars));
+        bar.append("□".repeat(totalBars - filledBars));
+        return bar.toString();
+    }
+	
 	private String formatActivitiesList(List<StravaActivityDto> activities, String lang) {
 		if (activities == null || activities.isEmpty()) {
 			String unsafeText = messageService.getMessage("athlete.activity.no_activities", lang);
