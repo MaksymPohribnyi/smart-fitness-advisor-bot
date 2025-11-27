@@ -35,7 +35,6 @@ public class KeyboardBuilderService {
 									new KeyboardButton(messageService.getMessage("menu.settings", lang))))))
 					.resizeKeyboard(true)
 					.oneTimeKeyboard(false)
-					.selective(true)
 					.build();
 	}
 

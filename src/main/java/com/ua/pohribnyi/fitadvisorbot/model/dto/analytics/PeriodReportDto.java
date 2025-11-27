@@ -6,8 +6,8 @@ import com.ua.pohribnyi.fitadvisorbot.model.enums.AnalyticsMetricType;
 
 import lombok.Builder;
 import lombok.Data;
-
 @Data
+
 @Builder
 public class PeriodReportDto {
 
@@ -25,6 +25,7 @@ public class PeriodReportDto {
 
 	// Dynamic List of Advanced Metrics
 	private List<MetricResult> advancedMetrics;
+	private List<MetricResult> baseMetrics; 
 
 	// Key textual insight (generated logic)
 	private String keyInsightKey;

@@ -65,27 +65,18 @@ public class FitnessAnalyticsService {
 						.findFirst()
 						.orElseThrow(() -> new IllegalStateException("No strategies available"))); 
 
-		// 3. Advanced Metrics
-		List<MetricResult> advancedMetrics = strategy.calculateMetrics(user, profile, activities, dailyMetrics);
+		// 3. Base & advanced Metrics
+		List<MetricResult> baseMetrics = strategy.calculateBaseMetrics(user, activities, dailyMetrics, duration);
+
+		List<MetricResult> advancedMetrics = strategy.calculateMetrics(user, profile, activities, dailyMetrics, duration);
 
 		// 4. Consistency
 		int idealWorkouts = (int) (duration.toDays() / 7.0 * 3.0);
 		int consistencyScore = idealWorkouts > 0 ? Math.min(100, (totalActivities * 100) / idealWorkouts) : 0;
 
 		// 5. Expert Logic (Simple Rule Engine)
-		String praiseKey;
-		String actionKey;
-
-		if (consistencyScore >= 80) {
-			praiseKey = "analytics.expert.praise.consistency";
-			actionKey = "analytics.expert.action.progression";
-		} else if (consistencyScore >= 40) {
-			praiseKey = "analytics.expert.praise.balance";
-			actionKey = "analytics.expert.action.zone2";
-		} else {
-			praiseKey = "analytics.expert.praise.start";
-			actionKey = "analytics.expert.action.sleep";
-		}
+		String praiseKey = strategy.getExpertPraiseKey(consistencyScore, advancedMetrics);
+		String actionKey = strategy.getExpertActionKey(consistencyScore, advancedMetrics);
 
 		return PeriodReportDto.builder()
 				.periodKey(periodKey)
@@ -95,6 +86,7 @@ public class FitnessAnalyticsService {
 				.totalDurationHours(totalDurationHours)
 				.consistencyScore(consistencyScore)
 				.consistencyVerdictKey(getConsistencyVerdictKey(consistencyScore))
+				.baseMetrics(baseMetrics)
 				.advancedMetrics(advancedMetrics)
 				.expertPraiseKey(praiseKey)
 				.expertActionKey(actionKey)

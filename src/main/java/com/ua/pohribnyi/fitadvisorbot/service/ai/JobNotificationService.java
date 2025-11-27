@@ -63,6 +63,7 @@ public class JobNotificationService {
 				// SUCCESS
 				String text = TelegramViewService.escapeMarkdownV2(messageService.getMessage("onboarding.job.success", lang));
 				EditMessageText successMsg = messageBuilder.createEditMessage(chatId, messageId, text);
+				
 				bot.execute(successMsg); 
 
                 PeriodReportDto report = analyticsService.generateOnboardingReport(job.getUser());

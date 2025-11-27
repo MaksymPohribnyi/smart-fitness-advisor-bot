@@ -8,6 +8,10 @@ group = 'com.ua.pohribnyi'
 version = '0.0.1-SNAPSHOT'
 description = 'A Telegram bot that provides smart fitness analytics and personalized advice.'
 
+ext {
+	set('springCloudVersion', "2025.0.0")
+}
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
@@ -25,6 +29,8 @@ repositories {
 }
 
 dependencies {
+	implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
+
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -55,6 +61,12 @@ dependencies {
 	// Telegram Bot API
     implementation "org.telegram:telegrambots:$telegrambots"
 	
+}
+
+dependencyManagement {
+ 	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+  	}
 }
 
 tasks.named('test') {

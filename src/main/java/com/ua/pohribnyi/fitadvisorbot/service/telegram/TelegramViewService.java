@@ -81,16 +81,6 @@ public class TelegramViewService {
 				keyboardBuilder.createGoalSelectionKeyboard(lang));
 	}
 
-	/**
-	 * Final message after onboarding is complete.
-	 */
-	public SendMessage getOnboardingCompletedMessage(Long chatId) {
-		String lang = messageService.getLangCode(chatId);
-		String text = escapeMarkdownV2(messageService.getMessage("onboarding.completed", lang));
-
-		return messageBuilder.createMessageWithKeyboard(chatId, text, keyboardBuilder.createMainMenuKeyboard(lang));
-	}
-
 	public SendMessage getGenerationWaitMessage(Long chatId) {
 		String lang = messageService.getLangCode(chatId);
 		String text = escapeMarkdownV2(messageService.getMessage("onboarding.job.started", lang));
@@ -195,26 +185,14 @@ public class TelegramViewService {
 				String.format(Locale.US, "%.1f", report.getTotalDistanceKm()),
 				String.format(Locale.US, "%.1f", report.getTotalDurationHours())))).append("\n\n");
 
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.base_metrics_header", lang))).append("\n");
+		appendMetricsList(sb, report.getBaseMetrics(), lang);
+		sb.append("\n");
+
+		
 		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.insights_header", lang))).append("\n");
-
-		// Loop through metrics using Line Template
-		for (MetricResult metric : report.getAdvancedMetrics()) {
-			String titleKey = "analytics.metric.title." + metric.getType().name();
-			String descKey = "analytics.metric.desc." + metric.getType().name();
-
-			String title = messageService.getMessage(titleKey, lang);
-			String desc = messageService.getMessage(descKey, lang);
-
-			// Template: "{0} *{1}*: {2}\n _{3}_"
-			String line = escapeMarkdownV2(messageService.getMessage("analytics.report.metric_line", 
-					lang, 
-					metric.getStatusEmoji(), 
-					title, // {1}
-					metric.getFormattedValue(), // {2}
-					desc // {3}
-			));
-			sb.append(line).append("\n");
-		}
+		appendMetricsList(sb, report.getAdvancedMetrics(), lang);
+		sb.append("\n");
 		
 		// Expert Summary Block
         String praise = messageService.getMessage(report.getExpertPraiseKey(), lang);
@@ -227,7 +205,11 @@ public class TelegramViewService {
 		// Footer
 		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.footer", lang)));
 
-		return messageBuilder.createMessage(chatId, sb.toString());
+		return messageBuilder.createMessageWithKeyboard(
+                chatId, 
+                sb.toString(), 
+                keyboardBuilder.createMainMenuKeyboard(lang)
+        );
 	}
 
 	public static String escapeMarkdownV2(String text) {
@@ -244,19 +226,24 @@ public class TelegramViewService {
 		return result.toString();
 	}
 
-	/**
-	 * Draws a text-based progress bar.
-	 * 0.7 -> [▓▓▓▓▓▓▓░░░] 70%
-	 */
-	private String drawProgressBar(double value, double max) {
-        int totalBars = 8; // concise for mobile
-        int filledBars = (int) ((value / max) * totalBars);
-        filledBars = Math.max(0, Math.min(filledBars, totalBars));
-        
-        StringBuilder bar = new StringBuilder();
-        bar.append("■".repeat(filledBars));
-        bar.append("□".repeat(totalBars - filledBars));
-        return bar.toString();
+	private void appendMetricsList(StringBuilder sb, List<MetricResult> metrics, String lang) {
+        for (MetricResult metric : metrics) {
+            String titleKey = "analytics.metric.title." + metric.getType().name();
+            String descKey = "analytics.metric.desc." + metric.getType().name();
+
+            String title = messageService.getMessage(titleKey, lang);
+            String desc = messageService.getMessage(descKey, lang);
+            
+            // {0}=Title, {1}=Value, {2}=Emoji, {3}=Desc
+            String line = escapeMarkdownV2(messageService.getMessage("analytics.report.metric_line", 
+                    lang, 
+                    title,
+                    metric.getFormattedValue(),
+                    metric.getStatusEmoji(), 
+                    desc
+            ));
+            sb.append(line).append("\n\n");
+        }
     }
 	
 	private String formatActivitiesList(List<StravaActivityDto> activities, String lang) {

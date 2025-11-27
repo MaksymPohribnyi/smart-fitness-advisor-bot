@@ -35,7 +35,7 @@ public class AsyncConfig {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 		executor.setCorePoolSize(5);
 		executor.setMaxPoolSize(10);
-		executor.setQueueCapacity(50);
+		executor.setQueueCapacity(200);
 		executor.setThreadNamePrefix("ai-gen-");
 		executor.setKeepAliveSeconds(60);
 

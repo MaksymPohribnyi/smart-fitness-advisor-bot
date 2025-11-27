@@ -107,24 +107,6 @@ public class CallbackQueryHandler {
 
 		log.info("User {} selected goal: {}. Asking for age.", user.getId(), goal);
 
-		/*
-		 * try { // 2. Створюємо НОВЕ повідомлення "Зачекайте..." SendMessage
-		 * waitMessage = viewService.getGenerationWaitMessage(chatId);
-		 * 
-		 * // 3. Надсилаємо його через НОВИЙ метод, який кидає виняток Message
-		 * sentMessage = bot.executeAndReturn(waitMessage); Integer
-		 * notificationMessageId = sentMessage.getMessageId();
-		 * 
-		 * // 4. This call is fast. It just creates a PENDING job.
-		 * syntheticDataService.triggerHistoryGeneration(user, profile, chatId,
-		 * notificationMessageId);
-		 * log.info("Triggered async history generation for user {}", user.getId());
-		 * 
-		 * } catch (Exception e) {
-		 * log.error("Failed to send wait message or trigger job: {}", e.getMessage(),
-		 * e); bot.sendMessage(viewService.getGeneralErrorMessage(chatId)); }
-		 */
-
 	}
 
 	

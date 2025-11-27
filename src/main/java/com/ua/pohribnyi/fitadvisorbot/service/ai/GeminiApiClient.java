@@ -13,8 +13,10 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Part;
 import com.ua.pohribnyi.fitadvisorbot.model.enums.JobStatus;
-import com.ua.pohribnyi.fitadvisorbot.util.retryable.RetryHelper;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,9 +30,6 @@ public class GeminiApiClient {
 	private final GenerateContentConfig geminiGenerationConfig;
 
 	private static final String MODEL_NAME = "gemini-2.5-flash-lite";
-
-	private static final int MAX_RETRY_ATTEMPTS = 3;
-	private static final long INITIAL_RETRY_DELAY_MS = 2000; // 2 seconds
 
 	/**
 	 * Async entry point for AI generation. Executed in dedicated thread pool
@@ -49,7 +48,7 @@ public class GeminiApiClient {
 			jobUpdaterService.updateJobStatus(jobId, JobStatus.DOWNLOADING);
 
 			// Step 2: Call API with retry logic (no TX, can be slow)
-			String rawResponse = callGeminiApiWithRetry(prompt);
+			String rawResponse = callGeminiApi(prompt);
 			log.info("[{}] Received response for job {}, length: {} chars", threadName, jobId, rawResponse.length());
 
 			// Step 3: Clean and validate JSON
@@ -68,22 +67,16 @@ public class GeminiApiClient {
 	}
 
 	/**
-	 * Calls Gemini API with retry logic. Retries on rate limit (429) or transient
-	 * errors (5xx).
-	 */
-	private String callGeminiApiWithRetry(String prompt) {
-		return RetryHelper.execute(() -> callGeminiApi(prompt), // What to do
-				this::isRetryableError, // When to retry
-				MAX_RETRY_ATTEMPTS, // How many times (3)
-				INITIAL_RETRY_DELAY_MS // How long to wait (2s)
-		);
-	}
-
-	/**
 	 * Makes actual API call to Gemini.
 	 * 
-	 * @throws RuntimeException on API errors
-	 */
+     * Порядок застосування:
+     * 1. @RateLimiter → Чекає до 30s на доступний слот
+     * 2. @CircuitBreaker → Блокує якщо API недоступний
+     * 3. @Retry → 3 спроби з exponential backoff
+     */
+    @RateLimiter(name = "geminiApi")
+    @CircuitBreaker(name = "geminiApi", fallbackMethod = "apiFallback")
+    @Retry(name = "geminiApi")
 	private String callGeminiApi(String prompt) {
 		try {
 			Content content = Content.builder().role("user").parts(Part.builder().text(prompt).build()).build();
@@ -179,16 +172,11 @@ public class GeminiApiClient {
 	}
 
 	/**
-	 * Determines if error is retryable (rate limit, network issues).
-	 */
-	private boolean isRetryableError(Exception e) {
-		String message = e.getMessage();
-		if (message == null)
-			return false;
-
-		return message.contains("429") || // Rate limit
-				message.contains("503") || // Service unavailable
-				message.contains("timeout") || message.contains("connection");
-	}
+     * Fallback if Circuit Breaker open.
+     */
+    private String apiFallback(String prompt, Exception e) {
+        log.error("API unavailable, fallback triggered: {}", e.getMessage());
+        throw new RuntimeException("Gemini API temporarily unavailable. Please try again later.", e);
+    }
 
 }
