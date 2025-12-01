@@ -1,0 +1,49 @@
+spring:
+  datasource:
+    # H2 in-memory database for testing
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # Recreate schema for each test run
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    show-sql: false  
+    
+  sql:
+    init:
+      mode: never  # Don`t init schema.sql/data.sql
+
+# Resilience4j test config
+resilience4j:
+  ratelimiter:
+    instances:
+      geminiApi:
+        limit-for-period: 10
+        limit-refresh-period: 1s
+        timeout-duration: 2s
+        
+  circuitbreaker:
+    instances:
+      geminiApi:
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        
+  retry:
+    instances:
+      geminiApi:
+        max-attempts: 3
+        wait-duration: 100ms
+
+# Logging
+logging:
+  level:
+    org.hibernate.SQL: ERROR
+    org.springframework: WARN
+    com.ua.pohribnyi: DEBUG

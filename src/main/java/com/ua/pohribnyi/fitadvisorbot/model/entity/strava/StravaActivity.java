@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.ua.pohribnyi.fitadvisorbot.enums.ActivityType;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.ActivityType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

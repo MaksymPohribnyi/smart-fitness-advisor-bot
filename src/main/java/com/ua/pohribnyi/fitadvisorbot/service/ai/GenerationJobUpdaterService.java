@@ -5,11 +5,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ua.pohribnyi.fitadvisorbot.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.GenerationJob;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.repository.ai.GenerationJobRepository;
 import com.ua.pohribnyi.fitadvisorbot.util.concurrency.event.JobDownloadedEvent;
 
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,6 +33,7 @@ public class GenerationJobUpdaterService {
 	 * Updates job status in a separate, short transaction.
 	 */
 	@Transactional(propagation = Propagation.REQUIRES_NEW, timeout = 5)
+	@Retry(name = "dbRead")
 	public void updateJobStatus(Long jobId, JobStatus status) {
 		GenerationJob job = jobRepository.findById(jobId)
 				.orElseThrow(() -> new IllegalStateException("Job not found: " + jobId));
@@ -43,6 +45,7 @@ public class GenerationJobUpdaterService {
 	 * Stages the cleaned response in a separate transaction.
 	 */
 	@Transactional(propagation = Propagation.REQUIRES_NEW, timeout = 10)
+	@Retry(name = "dbRead")
 	public void stageJobResponse(Long jobId, String cleanedJson) {
 		GenerationJob job = jobRepository.findById(jobId)
 				.orElseThrow(() -> new IllegalStateException("Job not found: " + jobId));

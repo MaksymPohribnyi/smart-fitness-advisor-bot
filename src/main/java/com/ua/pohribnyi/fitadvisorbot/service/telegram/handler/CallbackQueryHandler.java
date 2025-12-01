@@ -10,11 +10,11 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import com.ua.pohribnyi.fitadvisorbot.enums.JobStatus;
+import com.ua.pohribnyi.fitadvisorbot.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.GenerationJob;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.JobStatus;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.repository.ai.GenerationJobRepository;
 import com.ua.pohribnyi.fitadvisorbot.repository.user.UserProfileRepository;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.GeminiApiClient;
@@ -108,17 +108,31 @@ public class CallbackQueryHandler {
 		log.info("User {} selected goal: {}. Asking for age.", user.getId(), goal);
 
 	}
-
 	
-	private void handleAgeSelection(String data, Long chatId, Integer messageId, User user, FitnessAdvisorBotService bot) throws TelegramApiException {
-	    Integer age = Integer.parseInt(extractValue(data));
+	private void handleAgeSelection(String data, Long chatId, Integer messageId, User user,
+			FitnessAdvisorBotService bot) throws TelegramApiException {
+		Integer age = Integer.parseInt(extractValue(data));
 	    
 	    UserProfile profile = saveProfileAge(user, age);
 	    userSessionService.setState(user, UserState.ONBOARDING_COMPLETED);
-	    
 	    deleteMessage(chatId, messageId, bot);
-	    Message sentMessage = bot.executeAndReturn(viewService.getGenerationWaitMessage(chatId));
-	    syntheticDataService.triggerHistoryGeneration(user, profile, chatId, sentMessage.getMessageId());
+
+	    try {
+			Message sentMessage = bot.executeAndReturn(viewService.getGenerationWaitMessage(chatId));
+			syntheticDataService.triggerHistoryGeneration(user, profile, chatId, sentMessage.getMessageId());
+		} catch (RuntimeException e) {
+			if (e.getMessage().contains("overloaded")) {
+				log.warn("System overload for user {}: {}", user.getId(), e.getMessage());
+				String errorText = TelegramViewService
+						.escapeMarkdownV2(messageService.getMessage("error.system.overloaded", user.getLanguageCode()));
+				SendMessage errorMsg = messageBuilder.createMessage(chatId, errorText);
+				bot.sendMessage(errorMsg);
+
+			} else {
+				log.error("Unexpected error during history generation for user {}", user.getId(), e);
+				bot.sendMessage(viewService.getGeneralErrorMessage(chatId));
+			}
+		}
 	}
 	
 	private String extractValue(String data) {

@@ -36,7 +36,7 @@ public class DailyMetric {
 	private LocalDate date;
 
 	@Column(name = "sleep_hours")
-	private Float sleepHours;
+	private Double sleepHours;
 
 	@Column(name = "daily_base_steps")
 	private Integer dailyBaseSteps;

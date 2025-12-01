@@ -2,7 +2,7 @@ package com.ua.pohribnyi.fitadvisorbot.model.dto.analytics;
 
 import java.util.List;
 
-import com.ua.pohribnyi.fitadvisorbot.model.enums.AnalyticsMetricType;
+import com.ua.pohribnyi.fitadvisorbot.enums.AnalyticsMetricType;
 
 import lombok.Builder;
 import lombok.Data;
@@ -27,17 +27,18 @@ public class PeriodReportDto {
 	private List<MetricResult> advancedMetrics;
 	private List<MetricResult> baseMetrics; 
 
-	// Key textual insight (generated logic)
-	private String keyInsightKey;
-	
-	private String expertPraiseKey; 
-    private String expertActionKey;
+	// SPECIAL: Prediction Metric (Separated from advanced metrics for UI emphasis)
+    private MetricResult predictionMetric;
+
+    // Smart Advisor Summary (Single behavioral frame key)
+    private String advisorSummaryKey;
 
 	@Data
 	@Builder
 	public static class MetricResult {
 		private AnalyticsMetricType type;
 		private String formattedValue;
+		private Double rawValue;
 		private String statusEmoji; 
 	}
 }

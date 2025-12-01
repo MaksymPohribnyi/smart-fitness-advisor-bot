@@ -6,9 +6,9 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ua.pohribnyi.fitadvisorbot.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserSession;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.repository.user.UserSessionRepository;
 
 import lombok.RequiredArgsConstructor;

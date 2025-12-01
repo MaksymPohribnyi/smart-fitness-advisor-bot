@@ -1,4 +1,4 @@
-package com.ua.pohribnyi.fitadvisorbot.model.enums;
+package com.ua.pohribnyi.fitadvisorbot.enums;
 
 /**
  * Tracks the status of an asynchronous generation job.

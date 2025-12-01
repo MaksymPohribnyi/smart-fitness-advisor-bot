@@ -11,9 +11,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.ua.pohribnyi.fitadvisorbot.enums.ActivityType;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.strava.StravaActivity;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.ActivityType;
 
 @Repository
 public interface StravaActivityRepository extends JpaRepository<StravaActivity, Long> {

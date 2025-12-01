@@ -1,4 +1,4 @@
-package com.ua.pohribnyi.fitadvisorbot.model.enums;
+package com.ua.pohribnyi.fitadvisorbot.enums;
 
 public enum FitnessDataType {
 	    STEPS,

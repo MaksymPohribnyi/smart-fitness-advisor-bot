@@ -21,30 +21,38 @@ public interface GoalAnalyticsStrategy {
 	 * @param goalCode e.g., "lose_weight", "run_10k"
 	 */
 	boolean supports(String goalCode);
+	
+	String getGoalTitleKey();
 
-	List<MetricResult> calculateBaseMetrics(User user, List<Activity> activities, List<DailyMetric> dailyMetrics, Duration duration);
-	
-	
+	List<MetricResult> calculateBaseMetrics(User user, List<Activity> activities, List<DailyMetric> dailyMetrics,
+			Duration duration);
+
 	/**
-	 * Calculates specific advanced metrics based on the goal.
-	 * * @param duration The time period covered by this report (e.g. 7 days, 60 days).
-	 * Crucial for calculating averages and volumes correctly.
+	 * Calculates specific advanced metrics based on the goal. * @param duration The
+	 * time period covered by this report (e.g. 7 days, 60 days). Crucial for
+	 * calculating averages and volumes correctly.
 	 */
 	List<MetricResult> calculateMetrics(User user, UserProfile userProfile, List<Activity> activities,
 			List<DailyMetric> dailyMetrics, Duration duration);
 
 	/**
-	 * Returns the key for the goal title in messages.yml.
+	 * Calculates the single most important prediction metric for the goal. E.g.,
+	 * Race Predictor for runners, Calorie Forecast for weight loss.
 	 */
-	String getGoalTitleKey();
+	MetricResult calculatePredictionMetric(User user, UserProfile profile, List<Activity> activities,
+			List<DailyMetric> dailyMetrics);
 
 	/**
-	 * Returns a message key for expert praise based on metrics context.
+	 * Calculates consistency score using ALREADY calculated metrics to avoid
+	 * redundancy.
 	 */
-	String getExpertPraiseKey(double consistencyScore, List<MetricResult> metrics);
+	int calculateConsistencyScore(User user, List<Activity> activities, List<DailyMetric> dailyMetrics,
+			Duration duration, List<MetricResult> advancedMetrics);
 
 	/**
-	 * Returns a message key for expert action/challenge based on metrics context.
+	 * Returns a message key for the Smart Advisor summary based on user
+	 * consistency. Focuses on behavioral framing rather than specific workout
+	 * advice.
 	 */
-	String getExpertActionKey(double consistencyScore, List<MetricResult> metrics);
+	String getAdvisorSummaryKey(double consistencyScore);
 }

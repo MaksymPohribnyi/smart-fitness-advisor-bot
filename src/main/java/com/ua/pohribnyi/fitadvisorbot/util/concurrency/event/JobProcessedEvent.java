@@ -2,7 +2,7 @@ package com.ua.pohribnyi.fitadvisorbot.util.concurrency.event;
 
 import org.springframework.context.ApplicationEvent;
 
-import com.ua.pohribnyi.fitadvisorbot.model.enums.JobStatus;
+import com.ua.pohribnyi.fitadvisorbot.enums.JobStatus;
 
 /**
  * This event is published *after* the SyntheticDataProcessorService

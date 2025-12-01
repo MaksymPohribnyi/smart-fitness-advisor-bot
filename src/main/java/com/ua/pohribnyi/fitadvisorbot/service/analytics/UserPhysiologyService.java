@@ -10,6 +10,9 @@ import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 @Service
 public class UserPhysiologyService {
 
+	public static final double KCAL_IN_KG_FAT = 7000.0;
+	public static final double KCAL_PER_STEP = 0.05; // Average physiology factor
+	
 	/**
 	 * Calculates Zone 2 (Fat Burn Zone) boundaries based on Karvonen or Simple Max
 	 * HR formula. For MVP we use: (220 - age) * 0.6 to 0.75
@@ -28,5 +31,13 @@ public class UserPhysiologyService {
 		public boolean contains(Integer pulse) {
 			return pulse != null && pulse >= min && pulse <= max;
 		}
+	}
+	
+	public static double getKcalInKgFat() {
+		return KCAL_IN_KG_FAT;
+	}
+
+	public static double getKcalPerStep() {
+		return KCAL_PER_STEP;
 	}
 }

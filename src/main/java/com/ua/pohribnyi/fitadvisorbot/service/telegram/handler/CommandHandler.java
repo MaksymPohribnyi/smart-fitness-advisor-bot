@@ -6,9 +6,9 @@ import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
+import com.ua.pohribnyi.fitadvisorbot.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.service.analytics.FitnessAnalyticsService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;

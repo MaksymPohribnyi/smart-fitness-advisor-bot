@@ -1,4 +1,4 @@
-package com.ua.pohribnyi.fitadvisorbot.service.ai;
+package com.ua.pohribnyi.fitadvisorbot.util.concurrency.listener;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,9 +9,9 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageTe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import com.ua.pohribnyi.fitadvisorbot.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.GenerationJob;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.repository.ai.GenerationJobRepository;
 import com.ua.pohribnyi.fitadvisorbot.service.analytics.FitnessAnalyticsService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class JobNotificationService {
+public class JobProcessedEventListener {
 
 	private final GenerationJobRepository jobRepository;
 	private final FitnessAdvisorBotService bot; 

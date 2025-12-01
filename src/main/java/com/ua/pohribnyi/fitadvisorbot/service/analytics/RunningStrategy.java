@@ -6,12 +6,12 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.ua.pohribnyi.fitadvisorbot.enums.AnalyticsMetricType;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto.MetricResult;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.Activity;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyMetric;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.AnalyticsMetricType;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;
 import com.ua.pohribnyi.fitadvisorbot.util.math.MathUtils;
 import com.ua.pohribnyi.fitadvisorbot.util.math.MetricThreshold;
@@ -24,50 +24,53 @@ public class RunningStrategy extends AbstractGoalStrategy {
 	}
 
 	// 1. Running Capacity (km in aerobic zone)
-    private static final List<MetricThreshold> CAPACITY_VALUES = List.of(
-            new MetricThreshold(0.0, "analytics.running.capacity.start"),    // < 3 km
-            new MetricThreshold(3.0, "analytics.running.capacity.base"),     // 3-7 km
-            new MetricThreshold(7.0, "analytics.running.capacity.ready"),    // 7-9 km
-            new MetricThreshold(9.0, "analytics.running.capacity.hero")      // > 9 km
-    );
+	private static final List<MetricThreshold> CAPACITY_VALUES = List.of(
+			new MetricThreshold(0.0, "analytics.running.capacity.start"), // < 3 km
+			new MetricThreshold(3.0, "analytics.running.capacity.base"), // 3-7 km
+			new MetricThreshold(7.0, "analytics.running.capacity.ready"), // 7-9 km
+			new MetricThreshold(9.0, "analytics.running.capacity.hero") // > 9 km
+	);
 
-    // 2. Pace Stability (0-100%)
-    private static final List<MetricThreshold> PACE_VALUES = List.of(
-            new MetricThreshold(0.0, "analytics.running.pace.chaotic"),
-            new MetricThreshold(80.0, "analytics.running.pace.stable"),
-            new MetricThreshold(92.0, "analytics.running.pace.metronome")
-    );
+	// 2. Pace Stability (0-100%)
+	private static final List<MetricThreshold> PACE_VALUES = List.of(
+			new MetricThreshold(0.0, "analytics.running.pace.chaotic"),
+			new MetricThreshold(80.0, "analytics.running.pace.stable"),
+			new MetricThreshold(92.0, "analytics.running.pace.metronome"));
 
-    // 3. Endurance Reserve (bpm)
-    private static final List<MetricThreshold> RESERVE_VALUES = List.of(
-            new MetricThreshold(0.0, "analytics.running.reserve.exhausted"),
-            new MetricThreshold(20.0, "analytics.running.reserve.moderate"),
-            new MetricThreshold(35.0, "analytics.running.reserve.high")
-    );
+	// 3. Endurance Reserve (bpm)
+	private static final List<MetricThreshold> RESERVE_VALUES = List.of(
+			new MetricThreshold(0.0, "analytics.running.reserve.exhausted"),
+			new MetricThreshold(20.0, "analytics.running.reserve.moderate"),
+			new MetricThreshold(35.0, "analytics.running.reserve.high"));
 
 	// 4. Heart Comfort (% of Max HR)
-	// Lower is generally better for "Base Building" (Comfort), but too low means no effort.
+	// Lower is generally better for "Base Building" (Comfort), but too low means no
+	// effort.
 	// We frame it as "Zone efficiency".
 	private static final List<MetricThreshold> COMFORT_VALUES = List.of(
 			new MetricThreshold(0.0, "analytics.running.comfort.easy"), // < 70%
 			new MetricThreshold(70.0, "analytics.running.comfort.moderate"), // 70-85%
 			new MetricThreshold(85.0, "analytics.running.comfort.hard") // > 85%
 	);
-	
+
 	// 5. Weekly Volume (km/week)
-    private static final List<MetricThreshold> VOLUME_VALUES = List.of(
-            new MetricThreshold(0.0, "analytics.running.volume.start"),   // < 10 km
-            new MetricThreshold(10.0, "analytics.running.volume.base"),   // 10-20 km
-            new MetricThreshold(20.0, "analytics.running.volume.solid"),  // 20-30 km
-            new MetricThreshold(30.0, "analytics.running.volume.pro")     // > 30 km
-    );
-    
+	private static final List<MetricThreshold> VOLUME_VALUES = List.of(
+			new MetricThreshold(0.0, "analytics.running.volume.start"), // < 10 km
+			new MetricThreshold(10.0, "analytics.running.volume.base"), // 10-20 km
+			new MetricThreshold(20.0, "analytics.running.volume.solid"), // 20-30 km
+			new MetricThreshold(30.0, "analytics.running.volume.pro") // > 30 km
+	);
+
 	// 6. Race Predictor (Minutes)
 	private static final List<MetricThreshold> PREDICT_VALUES = List.of(
 			new MetricThreshold(0.0, "analytics.running.predict.elite"),
 			new MetricThreshold(45.0, "analytics.running.predict.fast"),
 			new MetricThreshold(55.0, "analytics.running.predict.avg"),
 			new MetricThreshold(65.0, "analytics.running.predict.start"));
+	
+	private static final double MIN_SLEEP_HOURS = 7.5;
+	private static final double RUNS_PER_WEEK = 3.0;
+	private static final double SOLID_WEEKLY_KM = 20.0;
 
 	@Override
 	public boolean supports(String goalCode) {
@@ -107,25 +110,42 @@ public class RunningStrategy extends AbstractGoalStrategy {
         // 5. Weekly volume
 		results.add(calcWeeklyVolume(runs, duration, lang));
 
-		// 6. Race Predictor (NEW)
-		results.add(calcRacePredictor(runs, lang));
-
 		return results;
 	}
 	
 	@Override
-    public String getExpertPraiseKey(double consistencyScore, List<MetricResult> metrics) {
-        if (consistencyScore >= 80) return "analytics.expert.praise.run_consistency";
-        return "analytics.expert.praise.run_start";
-    }
+    public MetricResult calculatePredictionMetric(User user, UserProfile profile, List<Activity> activities, List<DailyMetric> dailyMetrics) {
+        String lang = user.getLanguageCode();
+        List<Activity> runs = activities.stream()
+                .filter(a -> "Run".equalsIgnoreCase(a.getType()))
+                .toList();
 
-    @Override
-    public String getExpertActionKey(double consistencyScore, List<MetricResult> metrics) {
-        if (consistencyScore >= 80) return "analytics.expert.action.run_intervals"; 
-        if (consistencyScore >= 50) return "analytics.expert.action.run_long";      
-        return "analytics.expert.action.run_recovery";                              
+        return calcRacePredictor(runs, lang);
     }
+	
+	@Override
+	public int calculateConsistencyScore(User user, List<Activity> activities, List<DailyMetric> dailyMetrics,
+			Duration duration, List<MetricResult> advancedMetrics) {
+		double weeks = Math.max(1, duration.toDays() / DAYS_IN_WEEK);
 
+		// 1. Volume (40%) - Target: 20 km/week ("Solid" level)
+		// Extract from metrics
+		double weeklyKm = extractMetricValue(advancedMetrics, AnalyticsMetricType.WEEKLY_VOLUME);
+		int volumeScore = calcComponentScore(weeklyKm, SOLID_WEEKLY_KM, 40);
+
+		// 2. Frequency (40%) - Target: 3 runs/week
+		// Calculate from raw data as it is not explicit in metrics
+		long runCount = activities.stream().filter(a -> "Run".equalsIgnoreCase(a.getType())).count();
+		double runsPerWeek = runCount / weeks;
+		int freqScore = calcComponentScore(runsPerWeek, RUNS_PER_WEEK, 40);
+
+		// 3. Sleep (20%) - Target: 7.5h (Recovery is key for runners)
+		double avgSleep = getAverageSleep(dailyMetrics);
+		int sleepScore = calcComponentScore(avgSleep, MIN_SLEEP_HOURS, 20);
+
+		return volumeScore + freqScore + sleepScore;
+	}
+	
 	private MetricResult calcRunningCapacity(List<Activity> runs, UserProfile profile, String lang) {
         int age = profile.getAge() != null ? profile.getAge() : 30;
         int maxHr = 220 - age;
@@ -216,7 +236,7 @@ public class RunningStrategy extends AbstractGoalStrategy {
         		.sum() / 1000.0;
 
         long days = Math.max(1, duration.toDays());
-        double weeks = days / 7.0;
+        double weeks = days / DAYS_IN_WEEK;
         double weeklyAvg = MathUtils.safeDivide(totalDistKm, weeks);
         
         return buildResult(

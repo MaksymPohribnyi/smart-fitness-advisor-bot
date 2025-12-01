@@ -2,8 +2,8 @@ package com.ua.pohribnyi.fitadvisorbot.model.entity;
 
 import java.time.Instant;
 
+import com.ua.pohribnyi.fitadvisorbot.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.JobStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

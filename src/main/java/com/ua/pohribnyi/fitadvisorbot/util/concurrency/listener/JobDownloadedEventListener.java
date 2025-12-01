@@ -1,4 +1,4 @@
-package com.ua.pohribnyi.fitadvisorbot.service.ai;
+package com.ua.pohribnyi.fitadvisorbot.util.concurrency.listener;
 
 import java.util.List;
 
@@ -13,16 +13,17 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ua.pohribnyi.fitadvisorbot.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.ParsedData;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.google.ActivityDto;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.google.DailyMetricDto;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.Activity;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyMetric;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.GenerationJob;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.repository.ai.GenerationJobRepository;
 import com.ua.pohribnyi.fitadvisorbot.repository.data.ActivityRepository;
 import com.ua.pohribnyi.fitadvisorbot.repository.data.DailyMetricRepository;
+import com.ua.pohribnyi.fitadvisorbot.service.ai.SyntheticDataWorkerService;
 import com.ua.pohribnyi.fitadvisorbot.util.concurrency.event.JobDownloadedEvent;
 import com.ua.pohribnyi.fitadvisorbot.util.concurrency.event.JobProcessedEvent;
 
@@ -32,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class SyntheticDataProcessorService {
+public class JobDownloadedEventListener {
 
 	private final SyntheticDataWorkerService dataWorkerService;
 

@@ -1,5 +1,8 @@
 package com.ua.pohribnyi.fitadvisorbot.service.ai;
 
+import java.util.concurrent.RejectedExecutionException;
+
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -7,6 +10,7 @@ import com.ua.pohribnyi.fitadvisorbot.model.entity.GenerationJob;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 import com.ua.pohribnyi.fitadvisorbot.repository.ai.GenerationJobRepository;
+import com.ua.pohribnyi.fitadvisorbot.util.concurrency.event.JobCreatedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +23,7 @@ public class SyntheticDataService {
 	private final GenerationJobRepository jobRepository;
 	private final GeminiPromptBuilderService promptBuilderService;
 	private final GeminiApiClient geminiApiClient; // Worker 1
+	private final ApplicationEventPublisher eventPublisher;
 
 	/**
 	 * This is the main entry point, called synchronously by the Handler. It creates
@@ -34,8 +39,15 @@ public class SyntheticDataService {
 		String prompt = promptBuilderService.buildOnboardingPrompt(profile);
 
 		// Call the async worker to do the heavy lifting
-		geminiApiClient.generateAndStageHistory(job.getId(), prompt);
-
-		log.info("PENDING Job {} created and async download triggered for user {}", job.getId(), user.getId());
+		try {
+			eventPublisher.publishEvent(new JobCreatedEvent(job.getId(), prompt));
+			
+			//geminiApiClient.generateAndStageHistory(job.getId(), prompt);
+			log.info("✅ Job {} created and async worker started for user {}", job.getId(), user.getId());
+		} catch (RejectedExecutionException e) {
+			log.error("❌ Thread pool full, cannot start job {} for user {}", job.getId(), user.getId());
+			jobRepository.delete(job);
+			throw new RuntimeException("System is currently overloaded. Please try again in a few minutes.", e);
+		}
 	}
 }

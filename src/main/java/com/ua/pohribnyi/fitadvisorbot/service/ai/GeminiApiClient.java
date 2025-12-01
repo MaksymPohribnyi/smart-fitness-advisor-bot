@@ -12,7 +12,7 @@ import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Part;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.JobStatus;
+import com.ua.pohribnyi.fitadvisorbot.enums.JobStatus;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
@@ -61,7 +61,7 @@ public class GeminiApiClient {
 			log.info("[{}] Job {} successfully downloaded and staged", threadName, jobId);
 
 		} catch (Exception e) {
-			log.error("Generation failed for job {}: {}", jobId, e.getMessage(), e);
+			log.error("[{}] Job {} failed: {}", threadName, jobId, e.getMessage());
 			jobUpdaterService.markJobAsFailed(jobId, e);
 		}
 	}
@@ -77,9 +77,13 @@ public class GeminiApiClient {
     @RateLimiter(name = "geminiApi")
     @CircuitBreaker(name = "geminiApi", fallbackMethod = "apiFallback")
     @Retry(name = "geminiApi")
-	private String callGeminiApi(String prompt) {
-		try {
-			Content content = Content.builder().role("user").parts(Part.builder().text(prompt).build()).build();
+	public String callGeminiApi(String prompt) {
+    	log.debug("Calling Gemini API...");
+    	try {
+			Content content = Content.builder()
+					.role("user")
+					.parts(Part.builder().text(prompt).build())
+					.build();
 
 			GenerateContentResponse response = geminiClient.models.generateContent(MODEL_NAME, List.of(content),
 					geminiGenerationConfig);
@@ -88,7 +92,7 @@ public class GeminiApiClient {
 
 			if (text == null || text.isBlank()) {
 				log.error("Empty response from Gemini. Response object: {}", response);
-				throw new RuntimeException("Empty response from Gemini API");
+				throw new IllegalStateException("Empty response from Gemini API");
 			}
 
 			return text;

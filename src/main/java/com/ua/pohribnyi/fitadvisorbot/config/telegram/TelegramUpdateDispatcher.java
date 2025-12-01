@@ -3,8 +3,8 @@ package com.ua.pohribnyi.fitadvisorbot.config.telegram;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import com.ua.pohribnyi.fitadvisorbot.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
-import com.ua.pohribnyi.fitadvisorbot.model.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.TelegramErrorHandler;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.handler.CallbackQueryHandler;

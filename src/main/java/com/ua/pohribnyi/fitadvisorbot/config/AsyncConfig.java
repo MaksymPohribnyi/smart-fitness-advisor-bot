@@ -1,6 +1,7 @@
 package com.ua.pohribnyi.fitadvisorbot.config;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.springframework.context.annotation.Bean;
@@ -33,21 +34,29 @@ public class AsyncConfig {
 	@Bean(name = "aiGenerationExecutor")
 	public Executor aiGenerationExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(5);
-		executor.setMaxPoolSize(10);
-		executor.setQueueCapacity(200);
+		executor.setCorePoolSize(3);
+		executor.setMaxPoolSize(5);
+		executor.setQueueCapacity(500);
 		executor.setThreadNamePrefix("ai-gen-");
 		executor.setKeepAliveSeconds(60);
 
-		// Handle rejection: log and throw exception to trigger retry mechanism
-		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+		// CRITICAL FIX: Custom rejection handler
+		executor.setRejectedExecutionHandler((runnable, threadPoolExecutor) -> {
+			log.error("Thread pool SATURATED! Active={}, Queue={}, Completed={}",
+					threadPoolExecutor.getActiveCount(), 
+					threadPoolExecutor.getQueue().size(),
+					threadPoolExecutor.getCompletedTaskCount());
+
+			throw new RejectedExecutionException(
+					"AI generation thread pool is full. System is overloaded. Please try again later.");
+		});
 
 		executor.setWaitForTasksToCompleteOnShutdown(true);
-		executor.setAwaitTerminationSeconds(30);
+		executor.setAwaitTerminationSeconds(60);
 
 		executor.initialize();
 
-		log.info("AI Generation Executor initialized: core={}, max={}, queue={}", executor.getCorePoolSize(),
+		log.info("✅ AI Generation Executor initialized: core={}, max={}, queue={}", executor.getCorePoolSize(),
 				executor.getMaxPoolSize(), executor.getQueueCapacity());
 
 		return executor;
@@ -62,8 +71,8 @@ public class AsyncConfig {
 	@Bean(name = "dataProcessingExecutor")
 	public Executor dataProcessingExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(3);
-		executor.setMaxPoolSize(5);
+		executor.setCorePoolSize(5);
+		executor.setMaxPoolSize(10);
 		executor.setQueueCapacity(100);
 		executor.setThreadNamePrefix("data-proc-");
 		executor.setKeepAliveSeconds(60);

@@ -185,23 +185,29 @@ public class TelegramViewService {
 				String.format(Locale.US, "%.1f", report.getTotalDistanceKm()),
 				String.format(Locale.US, "%.1f", report.getTotalDurationHours())))).append("\n\n");
 
+		// Base Metrics (Foundation)
 		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.base_metrics_header", lang))).append("\n");
 		appendMetricsList(sb, report.getBaseMetrics(), lang);
 		sb.append("\n");
 
-		
+		// Smart Insights
 		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.insights_header", lang))).append("\n");
 		appendMetricsList(sb, report.getAdvancedMetrics(), lang);
 		sb.append("\n");
 		
-		// Expert Summary Block
-        String praise = messageService.getMessage(report.getExpertPraiseKey(), lang);
-        String action = messageService.getMessage(report.getExpertActionKey(), lang);
+		// 6. Prediction 
+        if (report.getPredictionMetric() != null) {
+        	sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.predict_header", lang))).append("\n");
+        	appendMetricsList(sb, List.of(report.getPredictionMetric()), lang);
+            sb.append("\n");
+        }
+		
+		// Advisor Summary (Behavioral Frame)
+        String advisorText = messageService.getMessage(report.getAdvisorSummaryKey(), lang);
+        String expertBlock = escapeMarkdownV2(
+                messageService.getMessage("analytics.report.advisor_section", lang, advisorText));
+        sb.append(expertBlock).append("\n");
         
-		String expertBlock = escapeMarkdownV2(
-				messageService.getMessage("analytics.report.expert_summary_section", lang, praise, action));
-        sb.append("\n").append(expertBlock).append("\n");
-
 		// Footer
 		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.footer", lang)));
 
@@ -212,6 +218,53 @@ public class TelegramViewService {
         );
 	}
 
+	/*
+	 * public SendMessage getAnalyticsReportMessage(Long chatId, PeriodReportDto
+	 * report) { String lang = messageService.getLangCode(chatId); StringBuilder sb
+	 * = new StringBuilder();
+	 * 
+	 * String goalTitle = messageService.getMessage(report.getGoalName(), lang);
+	 * String consistencyVerdict =
+	 * messageService.getMessage(report.getConsistencyVerdictKey(), lang);
+	 * 
+	 * String periodName = messageService.getMessage(report.getPeriodKey(), lang);
+	 * 
+	 * // Header sb.append(escapeMarkdownV2(messageService.getMessage(
+	 * "analytics.report.header", lang, periodName))).append("\n\n");
+	 * 
+	 * // Summary section sb.append(escapeMarkdownV2(messageService.getMessage(
+	 * "analytics.report.summary_section", lang, goalTitle, consistencyVerdict,
+	 * report.getConsistencyScore()))).append("\n\n");
+	 * 
+	 * // Stats sb.append(escapeMarkdownV2(messageService.getMessage(
+	 * "analytics.report.base_stats_section", lang, report.getTotalActivities(),
+	 * String.format(Locale.US, "%.1f", report.getTotalDistanceKm()),
+	 * String.format(Locale.US, "%.1f",
+	 * report.getTotalDurationHours())))).append("\n\n");
+	 * 
+	 * sb.append(escapeMarkdownV2(messageService.getMessage(
+	 * "analytics.report.base_metrics_header", lang))).append("\n");
+	 * appendMetricsList(sb, report.getBaseMetrics(), lang); sb.append("\n");
+	 * 
+	 * 
+	 * sb.append(escapeMarkdownV2(messageService.getMessage(
+	 * "analytics.report.insights_header", lang))).append("\n");
+	 * appendMetricsList(sb, report.getAdvancedMetrics(), lang); sb.append("\n");
+	 * 
+	 * // Expert Summary Block String praise =
+	 * messageService.getMessage(report.getExpertPraiseKey(), lang); String action =
+	 * messageService.getMessage(report.getExpertActionKey(), lang);
+	 * 
+	 * String expertBlock = escapeMarkdownV2(
+	 * messageService.getMessage("analytics.report.expert_summary_section", lang,
+	 * praise, action)); sb.append("\n").append(expertBlock).append("\n");
+	 * 
+	 * // Footer sb.append(escapeMarkdownV2(messageService.getMessage(
+	 * "analytics.report.footer", lang)));
+	 * 
+	 * return messageBuilder.createMessageWithKeyboard( chatId, sb.toString(),
+	 * keyboardBuilder.createMainMenuKeyboard(lang) ); }
+	 */
 	public static String escapeMarkdownV2(String text) {
 		if (text == null || text.isEmpty()) {
 			return text;
