@@ -13,6 +13,8 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Part;
 import com.ua.pohribnyi.fitadvisorbot.enums.JobStatus;
+import com.ua.pohribnyi.fitadvisorbot.service.ai.factory.GeminiConfigFactory;
+import com.ua.pohribnyi.fitadvisorbot.service.ai.schema.GeminiSchemaDefiner;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
@@ -27,7 +29,8 @@ public class GeminiApiClient {
 
 	private final GenerationJobUpdaterService jobUpdaterService; 
 	private final Client geminiClient;
-	private final GenerateContentConfig geminiGenerationConfig;
+	private final GeminiConfigFactory configFactory; 
+    private final GeminiSchemaDefiner schemaDefiner;
 
 	private static final String MODEL_NAME = "gemini-2.5-flash-lite";
 
@@ -85,8 +88,11 @@ public class GeminiApiClient {
 					.parts(Part.builder().text(prompt).build())
 					.build();
 
+			GenerateContentConfig config = configFactory
+					.createStructuredConfig(schemaDefiner.getFitnessHistorySchema());
+
 			GenerateContentResponse response = geminiClient.models.generateContent(MODEL_NAME, List.of(content),
-					geminiGenerationConfig);
+					config);
 
 			String text = extractResponseText(response);
 

@@ -59,6 +59,7 @@ public class HealthStrategy extends AbstractGoalStrategy {
 	private static final int STEPS_BASELINE = 3000; // "Junk" steps threshold
     private static final double STEPS_TO_MINUTES_RATIO = 110.0; // Brisk walk cadence
 	private static final double SPORT_TO_STEPS_RATIO = 150.0; // 1 min sport = 150 steps
+	private static final double TARGET_ACTIVE_LOAD = 225.0; 
 	
 	// "Ideal Day" Criteria for Streak (Hard Mode)
     private static final int STREAK_MIN_EQ_STEPS = 10000; 
@@ -146,7 +147,7 @@ public class HealthStrategy extends AbstractGoalStrategy {
 			weeklyMinutes = calcActiveLoad(activities, dailyMetrics, weeks, user.getLanguageCode()).getRawValue();
 		}
 		
-		int volumeScore = calcComponentScore(weeklyMinutes, SPORT_TO_STEPS_RATIO, 40);
+		int volumeScore = calcComponentScore(weeklyMinutes, TARGET_ACTIVE_LOAD, 40);
 
 		// 2. Sleep (30%) - Target: 7.0h Avg
 		double avgSleep = getAverageSleep(dailyMetrics);

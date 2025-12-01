@@ -10,6 +10,7 @@ import com.ua.pohribnyi.fitadvisorbot.model.entity.GenerationJob;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 import com.ua.pohribnyi.fitadvisorbot.repository.ai.GenerationJobRepository;
+import com.ua.pohribnyi.fitadvisorbot.service.ai.prompt.GeminiPromptBuilderService;
 import com.ua.pohribnyi.fitadvisorbot.util.concurrency.event.JobCreatedEvent;
 
 import lombok.RequiredArgsConstructor;
