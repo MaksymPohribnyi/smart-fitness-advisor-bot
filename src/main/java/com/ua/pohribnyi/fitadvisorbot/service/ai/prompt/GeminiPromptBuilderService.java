@@ -11,65 +11,41 @@ import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 public class GeminiPromptBuilderService {
 
 	private static final String PROMPT_TEMPLATE = """
-			You are an advanced physiology simulator. 
-            Task: Generate realistic fitness data representing a HUMAN, not a robot.
+			You are a fitness data simulator. Generate realistic 30-day history.
 
-            USER PROFILE:
-            - Activity Level: %s
-            - Goal: %s
-            - Target: 30 days fitness history ending on %s.
+			PROFILE: %s level, Goal: %s, End date: %s
 
-			SIMULATION PARAMETERS (Based on Level):
-            1. SLEEP Baseline: %.1f - %.1f hours
-            2. STEPS Baseline: %d - %d steps/day
-            3. STRESS Baseline: %d - %d (1=Low, 5=High)
-            4. WORKOUTS:
-               - Frequency: %d - %d sessions/week
-               - Duration: %d - %d minutes
-          
-			ACTIVITY PATTERNS (Level-Specific Physics):
-               %s 
+			REQUIREMENTS:
+			1. Exactly 28-30 dailyMetrics (one per day, sequential backwards from %s)
+			2. Exactly %d-%d activities total (for entire month)
+			3. Activity types: %s
 
-			CRITICAL HUMAN RULES (Apply strict correlations):
+			RANGES (vary naturally, not constant values):
+			- Sleep: %.1f-%.1f hours
+			- DailyBaseSteps: %d-%d (excluding workout steps)
+			- Stress: %d-%d (1=low, 5=high)
 
-            1. HEART RATE LOGIC:
-               - Running: Avg Pulse 135-175. Max: avgPulse + 15-30. Min: avgPulse - 20-40
-               - Walking: Avg Pulse 90-110.
-			
-			2. SLEEP IMPACT:
-			   - If sleep < 6.0h → Next day stress +1 → Higher avgPulse (+8-12 bpm) + Lower performance
-			   - If sleep < 5.0h → Skip workout or very light activity only
-			   - Good sleep (> 7.0h) → Better performance (Better pace, lower resting heart rate)
-			   
-			3. STRESS IMPACT:
-               - High stress (4-5) → Reduces daily steps (sedentary behavior).
-               - High stress days should rarely have high-intensity workouts.   
+			ACTIVITY RULES (for %s level):
+			%s
 
-			4. RECOVERY:
-               - After a hard workout (high pulse/long duration), the next day MUST be lighter or rest.
-               - Do not generate High Intensity workouts 3 days in a row. Interleave with Rest or Light days.
+			STEP CALCULATION:
+			- Running: steps = distanceMeters / 1.3 (range: distance/1.4 to distance/1.2)
+			- Walking: steps = distanceMeters / 0.75 (range: distance/0.8 to distance/0.7)
+			- Cycling/Workout: steps = 0
 
-			5. PROGRESSION & REALISM:
-               - Include natural variance (don't output exactly 8000 steps every day).
-               - Weekends: Change patterns (e.g., longer sleep, longer walk/run).
-               - "Bad Week": Simulate 3-4 days of low motivation/bad stats randomly.
+			CORRELATIONS:
+			- Sleep <6h → next day: stress+1, avgPulse+10
+			- Hard workout (pulse>165 or >50min) → next day: light/rest
+			- Stress 4-5 → reduce steps by 30%%
+			- Include 2-3 "bad days" (poor sleep, low activity, high stress)
 
-			6. DATA INTEGRITY:
-               - Dates must be sequential backwards from %s.
-               - No future dates
-               - Pace check: Running pace must be realistic (e.g., 4:45-8:00 min/km). 
-            
-			7. VALUE CONSTRAINTS:
-			   - All numbers must be within specified ranges
-			   - No null values
-			   - maxPulse > avgPulse > minPulse
-			   - durationSeconds and distanceMeters must correlate (reasonable pace)
-			
-			VALIDATION CHECKLIST:
-			✓ Exactly 28-30 dailyMetrics entries
-			✓ 10-18 activities
+			VALIDATION:
+			- maxPulse = avgPulse + (15 to 35)
+			- minPulse = avgPulse - (20 to 40)
+			- Running pace: 4:30-10:00 min/km | Cycling: 14-35 km/h
+			- NO 3 consecutive high-intensity days
 
-			Output ONLY valid JSON matching the Schema.
+			Output ONLY valid JSON.
 			""";
 
 	public String buildOnboardingPrompt(UserProfile profile) {
@@ -77,78 +53,85 @@ public class GeminiPromptBuilderService {
 		String goal = profile.getGoal();
 		LocalDate today = LocalDate.now();
 
-		GenerationConfig config = GenerationConfig.forLevel(level);
+		GenerationConfig config = GenerationConfig.forLevel(level, goal);
+
+		int minActivities = switch (level.toLowerCase()) {
+		case "pro", "advanced" -> 14;
+		case "moderate", "intermediate" -> 10;
+		default -> 8;
+		};
+
+		int maxActivities = minActivities + 4;
 
         return String.format(Locale.US, PROMPT_TEMPLATE,
                 // Context
                 level, goal, today,
+                today,
+                minActivities, maxActivities,
+                config.activityDistribution,
                 // Dynamic Constraints
                 config.minSleep, config.maxSleep,
                 config.minSteps, config.maxSteps,
                 config.minStress, config.maxStress,
-                config.minFreq, config.maxFreq,
-                config.minDuration, config.maxDuration,
-                config.activityPatterns,
-                // Validation Date
-                today
+                level,
+                config.activityPatterns
         );
 	}
 	
-	private record GenerationConfig(
-            double minSleep, double maxSleep,
-            int minSteps, int maxSteps,
-            int minStress, int maxStress,
-            int minFreq, int maxFreq,
-            int minDuration, int maxDuration,
-            String activityPatterns
-    ) {
-		static GenerationConfig forLevel(String level) {
+	private record GenerationConfig(double minSleep, double maxSleep, int minSteps, int maxSteps, int minStress,
+			int maxStress, String activityPatterns, String activityDistribution) {
+		
+		static GenerationConfig forLevel(String level, String goal) {
+			String distribution = getDistributionForGoal(goal);
+
 			return switch (level.toLowerCase()) {
 			case "pro", "advanced" -> new GenerationConfig(
-					7.0, 9.0, // Sleep
-					10000, 16000, // Steps
-					1, 3, // Stress
-					4, 6, // Freq
-					45, 90, // Duration
+					7.0, 8.0, 
+					10000, 14000, 
+					1, 3, 
 					"""
-                    - RUNNING: Fast Pace (4:00-5:15 min/km). 
-                      Example: 40 min -> 8-10 km. 
-                    - CYCLING: High Speed (25-35 km/h). 
-                      Example: 60 min -> 25-35 km.
-                    - WALKING: Power Walking (Active).
-                    - WORKOUT: Intense. High Pulse.
-                    """);
-			case "moderate", "intermediate" ->
-				new GenerationConfig(
-						6.5, 8.0, 
-						6000, 11000, 
-						2, 4, 
-						2, 4, 
-						30, 60, 
-						"""
-                        - RUNNING: Moderate Pace (5:30-7:00 min/km). 
-                          Example: 30 min -> 4.5-5.5 km.
-                        - CYCLING: Moderate Speed (18-24 km/h). 
-                          Example: 60 min -> 18-24 km.
-                        - WALKING: Normal Pace.
-                        - WORKOUT: Moderate. 
-                        """);
+					Run: 4:30-5:30 min/km, 35-60min, 7-11km, pulse 150-170 (max 165-185)
+					Cycle: 22-30 km/h, 45-75min, 18-35km, pulse 135-155 (max 150-170)
+					Workout: 30-50min, strength/HIIT, pulse 125-150 (max 140-165)
+					Walk: 20-35min, 2-4km, pulse 95-110 (recovery only)
+					""",
+					distribution);
+			case "moderate", "intermediate" -> new GenerationConfig(
+					6.0, 8.0, 
+					6000, 9000, 
+					2, 4, 
+					"""
+					Run: 5:45-7:15 min/km, 25-45min, 4-6.5km, pulse 140-160 (max 155-175)
+					Cycle: 18-24 km/h, 40-60min, 12-22km, pulse 130-150 (max 145-165)
+					Workout: 25-45min, bodyweight/light weights, pulse 120-145 (max 135-160)
+					Walk: 20-40min, 2-4km, pulse 90-105
+					""",
+					distribution);
 			default -> new GenerationConfig( // Beginner
 					5.0, 7.0, 
 					2500, 6500, 
 					3, 5, 
-					1, 2, 
-					15, 35, 
 					"""
-                    - RUNNING: Slow Jog / Walk-Run (7:30-10:00 min/km). 
-                      Example: 30 min -> 3.0-4.0 km.
-                    - CYCLING: Leisure Speed (14-19 km/h). 
-                      Example: 60 min -> 12-16 km.
-                    - WALKING: Casual Stroll (Slow).
-                    - WORKOUT: Light/Yoga. Low Pulse.
-                    """);
+					Run: 7:30-9:30 min/km, 20-35min, 2.5-4km, pulse 130-150 (max 145-165)
+					Walk: 12-16 min/km, 20-45min, 2-4km, pulse 90-110 (max 100-120)
+					Cycle: 14-19 km/h, 30-50min, 8-14km, pulse 115-135 (max 130-150)
+					Workout: 15-30min, yoga/stretching, pulse 100-125 (max 115-140)
+					""", 
+					distribution);
 			};
 		}
+
+		private static String getDistributionForGoal(String goal) {
+			if (goal == null)
+				goal = "";
+			return switch (goal.toLowerCase()) {
+			case "run_10k", "run 10k", "пробігти 10 км" -> "Run 75-85% (PRIORITY), Walk 5-15%, Workout 5-10%";
+			case "lose_weight", "схуднути" -> "Run 20-30%, Walk 45-55%, Workout 25-30%";
+			case "build_muscle", "набрати м'язи" -> "Workout 65-75% (PRIORITY), Run 10-15%, Walk 10-20%";
+			default -> "Walk 50-60%, Run 20-30%, Workout 15-25%";
+			};
+		}
+	
 	}
 	
 	

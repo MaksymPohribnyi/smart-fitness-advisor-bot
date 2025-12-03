@@ -21,7 +21,8 @@ analytics:
     insights_header: "🧠 *Smart Insights:*"
     predict_header: "📌 *Goal Trajectory:*"
     
-    metric_line: "{0}: {1} {2}\n   _{3}_"
+    metric_line: "{0}: {1}"
+    metric_line123: "{0}: {1} {2}\n   _{3}_"
     
     footer: "\n_Це аналіз твоїх можливостей. Почнімо перетворювати його в реальність?_"
     

@@ -24,14 +24,4 @@ public class GeminiConfig {
 				.build();
 	}
 	
-	@Bean
-	public GenerateContentConfig geminiGenerationConfig() {
-		return GenerateContentConfig.builder()
-				.temperature(0.2f)
-				.topP(0.95f)
-				.topK(40f)
-				.maxOutputTokens(16384)    
-				.responseMimeType("application/json")
-				.build();
-	}
 }

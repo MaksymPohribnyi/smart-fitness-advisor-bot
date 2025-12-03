@@ -19,6 +19,15 @@ spring:
     init:
       mode: never  # Don`t init schema.sql/data.sql
 
+strava:
+  client-id: fake-test-id
+  client-secret: fake-test-secret
+  redirect-uri: http://localhost:8080/test
+
+google:
+  gemini:
+    api-key: fake-key-for-tests
+
 # Resilience4j test config
 resilience4j:
   ratelimiter:
@@ -47,3 +56,4 @@ logging:
     org.hibernate.SQL: ERROR
     org.springframework: WARN
     com.ua.pohribnyi: DEBUG
+    io.github.resilience4j: DEBUG

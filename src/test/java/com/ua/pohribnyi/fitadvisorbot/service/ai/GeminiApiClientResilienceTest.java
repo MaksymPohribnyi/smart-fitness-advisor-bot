@@ -1,6 +1,14 @@
 package com.ua.pohribnyi.fitadvisorbot.service.ai;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -12,10 +20,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentConfig;
@@ -30,8 +41,6 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 
-import static org.mockito.Mockito.*;
-
 /**
  * Integration tests для Resilience4j patterns в GeminiApiClient.
  * 
@@ -42,22 +51,27 @@ import static org.mockito.Mockito.*;
  * 4. Async execution
  * 5. Edge cases
  */
-@SpringBootTest
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = { GeminiApiClient.class, GenerationJobUpdaterService.class, })
+@EnableConfigurationProperties
 @TestPropertySource(properties = {
-    // Rate Limiter: дуже низький ліміт для швидкого тесту
-    "resilience4j.ratelimiter.instances.geminiApi.limit-for-period=3",
-    "resilience4j.ratelimiter.instances.geminiApi.limit-refresh-period=10s",
-    "resilience4j.ratelimiter.instances.geminiApi.timeout-duration=5s",
-    
-    // Circuit Breaker: швидке відкриття
-    "resilience4j.circuitbreaker.instances.geminiApi.minimum-number-of-calls=3",
-    "resilience4j.circuitbreaker.instances.geminiApi.failure-rate-threshold=50",
-    "resilience4j.circuitbreaker.instances.geminiApi.wait-duration-in-open-state=5s",
-    
-    // Retry: швидкі спроби
-    "resilience4j.retry.instances.geminiApi.max-attempts=3",
-    "resilience4j.retry.instances.geminiApi.wait-duration=100ms"
-})
+		// Rate Limiter: дуже низький ліміт для швидкого тесту
+		"resilience4j.ratelimiter.instances.geminiApi.limit-for-period=3",
+		"resilience4j.ratelimiter.instances.geminiApi.limit-refresh-period=10s",
+		"resilience4j.ratelimiter.instances.geminiApi.timeout-duration=5s",
+
+		// Circuit Breaker: швидке відкриття
+		"resilience4j.circuitbreaker.instances.geminiApi.minimum-number-of-calls=3",
+		"resilience4j.circuitbreaker.instances.geminiApi.failure-rate-threshold=50",
+		"resilience4j.circuitbreaker.instances.geminiApi.wait-duration-in-open-state=5s",
+
+		// Retry: швидкі спроби
+		"resilience4j.retry.instances.geminiApi.max-attempts=3",
+		"resilience4j.retry.instances.geminiApi.wait-duration=100ms",
+
+		// Strava
+		"strava.client-id=fake-test-id", "strava.client-secret=fake-test-secret",
+		"strava.redirect-uri=http://localhost:8080/test" })
 class GeminiApiClientResilienceTest {
 
     @Autowired

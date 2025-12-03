@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   
   app:
@@ -30,8 +28,22 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d fitness_advisor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - fitadvisor-network
+
+volumes:
+  postgres_data:
+#  redis_data:
+
+networks:
+  fitadvisor-network:
+    driver: bridge
 
 #  redis:
 #    image: redis:7-alpine
@@ -43,11 +55,3 @@ services:
 #      - redis_data:/data
 #    networks:
 #      - fitadvisor-network
-
-volumes:
-  postgres_data:
-#  redis_data:
-
-networks:
-  fitadvisor-network:
-    driver: bridge

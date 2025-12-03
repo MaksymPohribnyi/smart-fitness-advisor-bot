@@ -34,7 +34,7 @@ public class FitnessAnalyticsService {
 
 	@Transactional(readOnly = true)
 	public PeriodReportDto generateOnboardingReport(User user) {
-		return generateReport(user, Duration.ofDays(60), "analytics.report.period.initial");
+		return generateReport(user, Duration.ofDays(30), "analytics.report.period.initial");
 	}
 
 	@Transactional(readOnly = true)

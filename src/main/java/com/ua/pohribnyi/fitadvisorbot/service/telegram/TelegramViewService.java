@@ -291,9 +291,9 @@ public class TelegramViewService {
             String line = escapeMarkdownV2(messageService.getMessage("analytics.report.metric_line", 
                     lang, 
                     title,
-                    metric.getFormattedValue(),
-                    metric.getStatusEmoji(), 
-                    desc
+                    metric.getFormattedValue()
+                    //metric.getStatusEmoji(), 
+                    //desc
             ));
             sb.append(line).append("\n\n");
         }

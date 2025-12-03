@@ -8,14 +8,14 @@ import com.google.genai.types.Schema;
 @Component
 public class GeminiConfigFactory {
 
-    private static final float ANALYTICAL_TEMPERATURE = 0.15f;
+    private static final float ANALYTICAL_TEMPERATURE = 0.5f;
     private static final float CREATIVE_TEMPERATURE = 0.7f;
 
     public GenerateContentConfig createStructuredConfig(Schema schema) {
         return GenerateContentConfig.builder()
                 .temperature(ANALYTICAL_TEMPERATURE)
                 .topP(0.95f)
-                .topK(20f) 
+                .topK(35f) 
                 .maxOutputTokens(16384)
                 .responseMimeType("application/json")
                 .responseSchema(schema) 

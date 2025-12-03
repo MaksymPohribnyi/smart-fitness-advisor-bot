@@ -41,8 +41,16 @@ public class GeminiSchemaDefiner {
 		return Schema.builder()
 				.type(Type.Known.OBJECT)
 				.properties(Map.of(
-						"dailyMetrics", Schema.builder().type(Type.Known.ARRAY).items(metricSchema).build(),
-						"activities", Schema.builder().type(Type.Known.ARRAY).items(activitySchema).build()
+						"dailyMetrics",	Schema.builder()
+						.type(Type.Known.ARRAY)
+						.items(metricSchema)
+						.description("EXACTLY 28-30 entries, one per day")
+						.build(),
+						"activities", Schema.builder()
+						.type(Type.Known.ARRAY)
+						.items(activitySchema)
+						.description("10-18 activities total for 30 days")
+						.build()
 						))
 				.required(List.of("dailyMetrics", "activities"))
 				.build();

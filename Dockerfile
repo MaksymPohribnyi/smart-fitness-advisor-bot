@@ -1,4 +1,4 @@
-FROM openjdk:21-jdk-slim
+FROM gradle:8.12-jdk21-alpine AS builder
 
 WORKDIR /app
 
@@ -11,10 +11,18 @@ RUN ./gradlew dependencies --no-daemon || true
 
 # Copy source code
 COPY src ./src
+RUN gradle build -x test --no-daemon
+
+# Runtime stage
+FROM eclipse-temurin:21-jre-alpine
 
 # Build application
-RUN ./gradlew build --no-daemon -x test
+WORKDIR /app
+
+COPY --from=build /app/build/libs/*.jar app.jar
 
 # Run application
 EXPOSE 8080
-CMD ["java", "-jar", "build/libs/smart-fitness-advisor-bot-0.0.1-SNAPSHOT.jar"]
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
