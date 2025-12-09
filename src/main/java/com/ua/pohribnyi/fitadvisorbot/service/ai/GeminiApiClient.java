@@ -78,36 +78,28 @@ public class GeminiApiClient {
      * 3. @Retry → 3 спроби з exponential backoff
      */
     @RateLimiter(name = "geminiApi")
-    @CircuitBreaker(name = "geminiApi", fallbackMethod = "apiFallback")
-    @Retry(name = "geminiApi")
+	@CircuitBreaker(name = "geminiApi", fallbackMethod = "apiFallback")
+	@Retry(name = "geminiApi")
 	public String callGeminiApi(String prompt) {
+		
     	log.debug("Calling Gemini API...");
-    	try {
-			Content content = Content.builder()
-					.role("user")
-					.parts(Part.builder().text(prompt).build())
-					.build();
 
-			GenerateContentConfig config = configFactory
-					.createStructuredConfig(schemaDefiner.getFitnessHistorySchema());
+		Content content = Content.builder()
+				.role("user")
+				.parts(Part.builder().text(prompt).build())
+				.build();
 
-			GenerateContentResponse response = geminiClient.models.generateContent(MODEL_NAME, List.of(content),
-					config);
+		GenerateContentConfig config = configFactory.createStructuredConfig(schemaDefiner.getFitnessHistorySchema());
+		GenerateContentResponse response = geminiClient.models.generateContent(MODEL_NAME, List.of(content), config);
 
-			String text = extractResponseText(response);
+		String text = extractResponseText(response);
 
-			if (text == null || text.isBlank()) {
-				log.error("Empty response from Gemini. Response object: {}", response);
-				throw new IllegalStateException("Empty response from Gemini API");
-			}
-
-			return text;
-
-		} catch (Exception e) {
-			// Wrap all exceptions for consistent handling
-			log.error("Gemini API call failed: {}", e.getMessage());
-			throw new RuntimeException("Gemini API error: " + e.getMessage(), e);
+		if (text == null || text.isBlank()) {
+			log.error("Empty response from Gemini. Response object: {}", response);
+			throw new IllegalStateException("Empty response from Gemini API");
 		}
+
+		return text;
 	}
 
 	/**
