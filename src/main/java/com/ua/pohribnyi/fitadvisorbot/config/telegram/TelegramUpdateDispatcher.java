@@ -61,10 +61,18 @@ public class TelegramUpdateDispatcher {
 					// (Optional: send a message "Please use the buttons")
 				}
 				break;
-			// (Future states for Diary)
-			// case AWAITING_DIARY_MOOD:
-			// ...
-
+			case AWAITING_SLEEP:
+			case AWAITING_STRESS:
+			case AWAITING_ACTIVITY_CONFIRMATION:
+			case AWAITING_ACTIVITY_TYPE:
+			case AWAITING_ACTIVITY_DURATION:
+			case AWAITING_ACTIVITY_INTENSITY:
+				if (update.hasCallbackQuery()) {
+					callbackQueryHandler.handleDiaryCallback(update.getCallbackQuery(), user, bot);
+				} else {
+					log.debug("User {} sent text during diary flow, ignoring.", user.getId());
+				}
+				break;
 			case DEFAULT:
 			case ONBOARDING_COMPLETED:
 			default:

@@ -10,6 +10,7 @@ import com.ua.pohribnyi.fitadvisorbot.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
 import com.ua.pohribnyi.fitadvisorbot.service.analytics.FitnessAnalyticsService;
+import com.ua.pohribnyi.fitadvisorbot.service.analytics.diary.DiaryService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.TelegramViewService;
@@ -27,6 +28,7 @@ public class CommandHandler {
     private final MessageService messageService;
     private final UserSessionService userSessionService;
     private final FitnessAnalyticsService analyticsService;
+    private final DiaryService diaryService;
 
     /**
      * Handles global commands that run regardless of state (e.g., /start).
@@ -83,7 +85,7 @@ public class CommandHandler {
 	private SendMessage routeDefaultCommand(Long chatId, String commandText, String lang, User user) {
 		try {
 			if (commandText.equals(messageService.getMessage("menu.diary", lang))) {
-				return handleDiaryCommand(chatId, user);
+				return handleDiaryCommand(user);
 			} else if (commandText.equals(messageService.getMessage("menu.analytics", lang))) {
 				return handleAnalyticsCommand(chatId, user);
 			} else if (commandText.equals(messageService.getMessage("menu.settings", lang))) {
@@ -99,13 +101,9 @@ public class CommandHandler {
 		}
 	}
 	
-	private SendMessage handleDiaryCommand(Long chatId, User user) {
-        userSessionService.setState(user, UserState.AWAITING_DIARY_MOOD);
-        // TODO: Implement diary functionality
-        return SendMessage.builder()
-                .chatId(chatId.toString())
-                .text("Showing Diary... (Not Implemented)")
-                .build();
+	private SendMessage handleDiaryCommand(User user) {
+		log.info("User {} requested Diary manually", user.getId());
+        return diaryService.startDailyCheckIn(user);
     }
 
     private SendMessage handleAnalyticsCommand(Long chatId, User user) {

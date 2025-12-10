@@ -20,12 +20,12 @@ import com.ua.pohribnyi.fitadvisorbot.repository.user.UserProfileRepository;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.GeminiApiClient;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.SyntheticDataService;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.prompt.GeminiPromptBuilderService;
+import com.ua.pohribnyi.fitadvisorbot.service.analytics.diary.DiaryService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageBuilderService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.TelegramViewService;
 import com.ua.pohribnyi.fitadvisorbot.service.user.UserSessionService;
-import com.ua.pohribnyi.fitadvisorbot.util.KeyboardBuilderService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +44,7 @@ public class CallbackQueryHandler {
 	private final GeminiPromptBuilderService promptBuilderService;
 	private final MessageService messageService;
 	private final MessageBuilderService messageBuilder;
+	private final DiaryService diaryService;
 
 	/**
 	 * Handles callbacks when user is in the DEFAULT state (e.g., Strava buttons).
@@ -134,6 +135,47 @@ public class CallbackQueryHandler {
 			}
 		}
 	}
+	
+	/**
+	 * Handles Diary flow callbacks.
+	 */
+	public void handleDiaryCallback(CallbackQuery callbackQuery, User user, FitnessAdvisorBotService bot) {
+		String data = callbackQuery.getData();
+		Integer messageId = callbackQuery.getMessage().getMessageId();
+
+		try {
+			EditMessageText response = null;
+
+			if (data.startsWith("diary:sleep:")) {
+				response = diaryService.processSleepInput(user, data, messageId);
+			} else if (data.startsWith("diary:stress:")) {
+				response = diaryService.processStressInput(user, data, messageId);
+			} else if (data.startsWith("diary:act:")) {
+				response = diaryService.processActivityConfirmation(user, data, messageId, bot);
+			} else if (data.startsWith("diary:type:")) {
+				response = diaryService.processActivityType(user, data, messageId);
+			} else if (data.startsWith("diary:dur:")) {
+				response = diaryService.processActivityDuration(user, data, messageId);
+			} else if (data.startsWith("diary:rpe:")) {
+				response = diaryService.processActivityIntensity(user, data, messageId, bot);
+			}
+
+			// Якщо сервіс повернув UI оновлення - виконуємо його
+			if (response != null) {
+				bot.execute(response);
+			}
+
+		} catch (TelegramApiException e) {
+			log.error("Telegram API Error during diary callback: {}", e.getMessage());
+		} catch (Exception e) {
+			log.error("Error processing diary callback: {}", e.getMessage(), e);
+			bot.sendMessage(viewService.getGeneralErrorMessage(user.getTelegramUserId()));
+		} finally {
+			// Завжди відповідаємо на колбек, щоб зупинити "спінер" завантаження
+			answerCallback(callbackQuery.getId(), bot);
+		}
+	}
+	
 	
 	private String extractValue(String data) {
 		String[] parts = data.split(":");

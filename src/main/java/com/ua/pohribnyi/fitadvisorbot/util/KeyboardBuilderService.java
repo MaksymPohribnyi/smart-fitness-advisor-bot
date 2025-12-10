@@ -101,5 +101,75 @@ public class KeyboardBuilderService {
 								InlineKeyboardButton.builder().text("46+").callbackData("onboarding:age:50").build()))
 				.build();
 	}
+
+	public InlineKeyboardMarkup createSleepRatingKeyboard(String lang) {
+		return InlineKeyboardMarkup.builder()
+				.keyboardRow(List.of(createBtn("diary.sleep.bad", "diary:sleep:bad", lang),
+						createBtn("diary.sleep.avg", "diary:sleep:avg", lang)))
+				.keyboardRow(List.of(createBtn("diary.sleep.good", "diary:sleep:good", lang))).build();
+	}
+
+	public InlineKeyboardMarkup createStressRatingKeyboard(String lang) {
+		return InlineKeyboardMarkup.builder()
+				.keyboardRow(List.of(createBtn("diary.stress.low", "diary:stress:1", lang),
+						createBtn("diary.stress.med", "diary:stress:3", lang),
+						createBtn("diary.stress.high", "diary:stress:5", lang)))
+				.build();
+	}
+
+	public InlineKeyboardMarkup createActivityConfirmationKeyboard(String lang) {
+        return InlineKeyboardMarkup.builder()
+            .keyboardRow(List.of(
+                createBtn("diary.activity.was", "diary:act:yes", lang),
+                createBtn("diary.activity.wasnt", "diary:act:no", lang)
+            ))
+            .build();
+    }
+
+    public InlineKeyboardMarkup createActivityTypeKeyboard(String lang) {
+        return InlineKeyboardMarkup.builder()
+            .keyboardRow(List.of(
+                createBtn("diary.type.run", "diary:type:Run", lang),
+                createBtn("diary.type.gym", "diary:type:Workout", lang)
+            ))
+            .keyboardRow(List.of(
+                createBtn("diary.type.walk", "diary:type:Walk", lang),
+                createBtn("diary.type.ride", "diary:type:Ride", lang)
+            ))
+            .build();
+    }
+
+    public InlineKeyboardMarkup createDurationKeyboard(String lang) {
+        return InlineKeyboardMarkup.builder()
+            .keyboardRow(List.of(
+                InlineKeyboardButton.builder().text("20 min").callbackData("diary:dur:20").build(),
+                InlineKeyboardButton.builder().text("40 min").callbackData("diary:dur:40").build(),
+                InlineKeyboardButton.builder().text("60 min").callbackData("diary:dur:60").build()
+            ))
+            .keyboardRow(List.of(
+                InlineKeyboardButton.builder().text("90+ min").callbackData("diary:dur:90").build()
+            ))
+            .build();
+    }
+
+    public InlineKeyboardMarkup createIntensityKeyboard(String lang) {
+        return InlineKeyboardMarkup.builder()
+            .keyboardRow(List.of(
+                createBtn("diary.rpe.easy", "diary:rpe:3", lang),   // 1-3
+                createBtn("diary.rpe.med", "diary:rpe:5", lang)     // 4-6
+            ))
+            .keyboardRow(List.of(
+                createBtn("diary.rpe.hard", "diary:rpe:8", lang),   // 7-8
+                createBtn("diary.rpe.max", "diary:rpe:10", lang)    // 9-10
+            ))
+            .build();
+    }
+
+    private InlineKeyboardButton createBtn(String key, String data, String lang) {
+        return InlineKeyboardButton.builder()
+            .text(messageService.getMessage(key, lang))
+            .callbackData(data)
+            .build();
+    }
 	
 }

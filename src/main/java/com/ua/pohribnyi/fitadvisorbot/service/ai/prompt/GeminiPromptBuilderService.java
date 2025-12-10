@@ -1,16 +1,21 @@
 package com.ua.pohribnyi.fitadvisorbot.service.ai.prompt;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.ua.pohribnyi.fitadvisorbot.model.entity.Activity;
+import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyMetric;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 
 @Service
 public class GeminiPromptBuilderService {
 
-	private static final String PROMPT_TEMPLATE = """
+	private static final String HISTORY_PROMPT_TEMPLATE = """
 			You are a fitness data simulator. Generate realistic 30-day history.
 
 			PROFILE: %s level, Goal: %s, End date: %s
@@ -48,6 +53,38 @@ public class GeminiPromptBuilderService {
 			Output ONLY valid JSON.
 			""";
 
+	private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("MM-dd");
+
+	private static final String DAILY_ADVICE_TEMPLATE = """
+			Role: Motivational Sports Psychologist & Analytics Mentor.
+			Task: Give a short, personalized Daily Insight based on user data.
+			Language: Ukrainian.
+
+			USER PROFILE:
+			- Level: %s
+			- Goal: %s
+
+			TODAY'S CHECK-IN:
+			- Sleep: %.1f h (Norm: 7-8h)
+			- Stress: %d/5 (1=Zen, 5=High)
+			- Activity Yesterday: %s
+
+			WEEKLY HISTORY (JSON):
+			```json
+			%s
+			```
+
+			INSTRUCTIONS:
+			1. **Analyze Context**: Look at the JSON history. Is there a streak? Gaps? High intensity yesterday?
+			2. **Vector**:
+			   - If recovering (bad sleep/stress): Suggest restoration.
+			   - If momentum is high: Praise consistency.
+			   - If stuck: Suggest a micro-step.
+			3. **Format**: Plain text, max 3 sentences. Empathic tone.
+
+			Output ONLY the advice text.
+			""";
+
 	public String buildOnboardingPrompt(UserProfile profile) {
 		String level = profile.getLevel() != null ? profile.getLevel() : "beginner";
 		String goal = profile.getGoal();
@@ -63,7 +100,7 @@ public class GeminiPromptBuilderService {
 
 		int maxActivities = minActivities + 4;
 
-        return String.format(Locale.US, PROMPT_TEMPLATE,
+        return String.format(Locale.US, HISTORY_PROMPT_TEMPLATE,
                 // Context
                 level, goal, today,
                 today,
@@ -78,6 +115,43 @@ public class GeminiPromptBuilderService {
         );
 	}
 	
+	public String buildDailyAdvicePrompt(UserProfile profile, List<Activity> weekActivities, DailyMetric todayMetric,
+			boolean hadActivityYesterday) {
+		String level = profile.getLevel() != null ? profile.getLevel() : "beginner";
+		String goal = profile.getGoal() != null ? profile.getGoal() : "health";
+
+		double sleep = todayMetric.getSleepHours() != null ? todayMetric.getSleepHours() : 0.0;
+		int stress = todayMetric.getStressLevel() != null ? todayMetric.getStressLevel() : 3;
+		String activityStatus = hadActivityYesterday ? "YES" : "NO";
+
+		String historyJson = formatActivitiesToJson(weekActivities);
+
+		return String.format(Locale.US, 
+				DAILY_ADVICE_TEMPLATE, 
+				level, 
+				goal, 
+				sleep, 
+				stress, 
+				activityStatus, 
+				historyJson);
+	}
+
+	private String formatActivitiesToJson(List<Activity> activities) {
+		if (activities.isEmpty())
+			return "[]";
+
+		return activities.stream()
+				.map(a -> String.format(Locale.US, "{\"date\":\"%s\", "
+						+ "\"type\":\"%s\", "
+						+ "\"mins\":%d, "
+						+ "\"pulse\":%d}",
+						a.getDateTime().format(DATE_FMT), 
+						a.getType() != null ? a.getType() : "Workout",
+						a.getDurationSeconds() / 60, 
+						a.getAvgPulse() != null ? a.getAvgPulse() : 0))
+				.collect(Collectors.joining(", ", "[", "]"));
+	}
+
 	private record GenerationConfig(double minSleep, double maxSleep, int minSteps, int maxSteps, int minStress,
 			int maxStress, String activityPatterns, String activityDistribution) {
 		

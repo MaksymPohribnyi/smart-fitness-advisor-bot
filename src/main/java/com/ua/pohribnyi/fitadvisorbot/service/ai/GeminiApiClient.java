@@ -94,12 +94,29 @@ public class GeminiApiClient {
 
 		String text = extractResponseText(response);
 
-		if (text == null || text.isBlank()) {
-			log.error("Empty response from Gemini. Response object: {}", response);
-			throw new IllegalStateException("Empty response from Gemini API");
-		}
-
 		return text;
+	}
+
+	/**
+	 * Generates creative text content without strict JSON schema. Used for daily
+	 * advice and motivation.
+	 */
+	@RateLimiter(name = "geminiApi")
+	@CircuitBreaker(name = "geminiApi", fallbackMethod = "apiFallback")
+	@Retry(name = "geminiApi")
+	public String generateText(String prompt) {
+		log.debug("Calling Gemini API for text generation...");
+		
+		Content content = Content
+				.builder()
+				.role("user")
+				.parts(Part.builder().text(prompt).build())
+				.build();
+
+		GenerateContentConfig config = configFactory.createCreativeConfig();
+		GenerateContentResponse response = geminiClient.models.generateContent(MODEL_NAME, List.of(content), config);
+
+		return extractResponseText(response);
 	}
 
 	/**
@@ -137,7 +154,7 @@ public class GeminiApiClient {
 		}
 
 		// Find first non-empty text part
-		return content.get().parts()
+		String responseText = content.get().parts()
 				.stream()
 				.flatMap(List::stream)
 				.map(Part::text)
@@ -145,6 +162,14 @@ public class GeminiApiClient {
 				.filter(text -> !text.isBlank())
 				.findFirst()
 				.orElse(null);
+		
+		if (responseText == null || responseText.isBlank()) {
+			log.error("Empty response from Gemini. Response object: {}", response);
+			throw new IllegalStateException("Empty response from Gemini API");
+		}
+		
+		return responseText;
+		
 	}
 
 	/**
@@ -177,7 +202,10 @@ public class GeminiApiClient {
      * Fallback if Circuit Breaker open.
      */
     private String apiFallback(String prompt, Exception e) {
-        log.error("API unavailable, fallback triggered: {}", e.getMessage());
+    	if (e instanceof IllegalArgumentException) {
+            throw (IllegalArgumentException) e;
+        }
+    	log.error("API unavailable, fallback triggered: {}", e.getMessage());
         throw new RuntimeException("Gemini API temporarily unavailable. Please try again later.", e);
     }
 
