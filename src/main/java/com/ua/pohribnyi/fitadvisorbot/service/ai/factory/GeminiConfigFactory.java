@@ -9,7 +9,7 @@ import com.google.genai.types.Schema;
 public class GeminiConfigFactory {
 
     private static final float ANALYTICAL_TEMPERATURE = 0.5f;
-    private static final float CREATIVE_TEMPERATURE = 0.8f;
+    private static final float CREATIVE_TEMPERATURE = 0.9f;
 
     public GenerateContentConfig createStructuredConfig(Schema schema) {
         return GenerateContentConfig.builder()
@@ -22,12 +22,14 @@ public class GeminiConfigFactory {
                 .build();
     }
 
-    public GenerateContentConfig createCreativeConfig() {
+    public GenerateContentConfig createCreativeConfig(Schema schema) {
         return GenerateContentConfig.builder()
                 .temperature(CREATIVE_TEMPERATURE) 
                 .topP(0.95f)
                 .topK(40f)
                 .maxOutputTokens(2048) 
+                .responseMimeType("application/json")
+                .responseSchema(schema)
                 .build(); 
     }
 }

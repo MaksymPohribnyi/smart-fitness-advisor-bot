@@ -55,4 +55,27 @@ public class GeminiSchemaDefiner {
 				.required(List.of("dailyMetrics", "activities"))
 				.build();
 	}
+    
+    public Schema getDailyAdviceSchema() {
+        return Schema.builder()
+                .type(Type.Known.OBJECT)
+                .properties(Map.of(
+                        "analysis", Schema.builder()
+                                .type(Type.Known.STRING)
+                                .description("Week summary with specific data: durations, pulse.")
+                                .build(),
+                        "status", Schema.builder()
+                                .type(Type.Known.STRING)
+                                .description("Current state assessment based on sleep/stress.")
+                                .build(),
+                        "advice", Schema.builder()
+                                .type(Type.Known.STRING)
+                                .description("Motivational next step (achievable, exciting).")
+                                .build()
+                ))
+                .required(List.of("analysis", "status", "advice"))
+                .description("Motivational daily advice in Ukrainian based on user's fitness data")
+                .build();
+    }
+    
 }

@@ -75,10 +75,7 @@ public class JobProcessedEventListener {
 				String error = job.getErrorMessage() != null ? job.getErrorMessage() : "Unknown error";
 				String text = TelegramViewService.escapeMarkdownV2(messageService.getMessage("onboarding.job.failed", lang, error));
 
-				// Add the "Retry" button
-				InlineKeyboardMarkup retryKeyboard = keyboardBuilder.createJobRetryKeyboard(lang, job.getId());
-				EditMessageText errorMsg = messageBuilder.createEditMessageWithKeyboard(chatId, messageId, text,
-						retryKeyboard);
+				EditMessageText errorMsg = messageBuilder.createEditMessage(chatId, messageId, text);
 				bot.execute(errorMsg);
 			}
 		} catch (TelegramApiException e) {

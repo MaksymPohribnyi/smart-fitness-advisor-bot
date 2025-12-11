@@ -109,63 +109,27 @@ public class TelegramViewService {
 
 	public SendMessage getAnalyticsReportMessage(Long chatId, PeriodReportDto report) {
 		String lang = messageService.getLangCode(chatId);
-		StringBuilder sb = new StringBuilder();
+		String text = buildAnalyticsReportText(chatId, report, lang, false);
 
-		String goalTitle = messageService.getMessage(report.getGoalName(), lang);
-		String consistencyVerdict = messageService.getMessage(report.getConsistencyVerdictKey(), lang);
-
-		String periodName = messageService.getMessage(report.getPeriodKey(), lang);
-		
-		// Header
-		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.header", lang, periodName))).append("\n\n");
-
-		// Summary section
-		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.summary_section", lang, goalTitle, consistencyVerdict,
-				report.getConsistencyScore()))).append("\n\n");
-		
-		// Stats
-		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.base_stats_section", lang, report.getTotalActivities(),
-				String.format(Locale.US, "%.1f", report.getTotalDistanceKm()),
-				String.format(Locale.US, "%.1f", report.getTotalDurationHours())))).append("\n\n");
-
-		// Base Metrics (Foundation)
-		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.base_metrics_header", lang))).append("\n");
-		appendMetricsList(sb, report.getBaseMetrics(), lang);
-		sb.append("\n");
-
-		// Smart Insights
-		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.insights_header", lang))).append("\n");
-		appendMetricsList(sb, report.getAdvancedMetrics(), lang);
-		sb.append("\n");
-		
-		// 6. Prediction 
-        if (report.getPredictionMetric() != null) {
-        	sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.predict_header", lang))).append("\n");
-        	appendMetricsList(sb, List.of(report.getPredictionMetric()), lang);
-            sb.append("\n");
-        }
-		
-		// Advisor Summary (Behavioral Frame)
-        String advisorText = messageService.getMessage(report.getAdvisorSummaryKey(), lang);
-        String expertBlock = escapeMarkdownV2(
-                messageService.getMessage("analytics.report.advisor_section", lang, advisorText));
-        sb.append(expertBlock).append("\n");
-        
-		// Footer
-		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.footer", lang)));
-
-		return messageBuilder.createMessageWithKeyboard(
-                chatId, 
-                sb.toString(), 
-                keyboardBuilder.createMainMenuKeyboard(lang)
-        );
+		return messageBuilder.createMessageWithKeyboard(chatId, text,
+				keyboardBuilder.createAnalyticsKeyboard(lang, false, report.getPeriodKey()));
 	}
+
+	public EditMessageText getAnalyticsReportEditMessage(Long chatId, Integer messageId, PeriodReportDto report,
+			boolean showDetails) {
+		String lang = messageService.getLangCode(chatId);
+		String text = buildAnalyticsReportText(chatId, report, lang, showDetails);
+
+		return messageBuilder.createEditMessageWithKeyboard(chatId, messageId, text,
+				keyboardBuilder.createAnalyticsKeyboard(lang, showDetails, report.getPeriodKey()));
+    }
 	
-	public SendMessage getDiaryStartMessage(Long chatId) {
+	public SendMessage getDiaryStartMessage(Long chatId, boolean isManual) {
         String lang = messageService.getLangCode(chatId);
-        String text = escapeMarkdownV2(messageService.getMessage("diary.question.sleep", lang));
-        return messageBuilder.createMessageWithKeyboard(chatId, text, 
-                keyboardBuilder.createSleepRatingKeyboard(lang));
+		String textKey = isManual ? "diary.question.sleep_manual" : "diary.question.sleep";
+		String text = escapeMarkdownV2(messageService.getMessage(textKey, lang));
+		return messageBuilder.createMessageWithKeyboard(chatId, text, 
+				keyboardBuilder.createSleepRatingKeyboard(lang));
     }
 
     public EditMessageText getDiaryStressQuestion(Long chatId, Integer messageId) {
@@ -237,24 +201,77 @@ public class TelegramViewService {
 		return result.toString();
 	}
 
-	private void appendMetricsList(StringBuilder sb, List<MetricResult> metrics, String lang) {
-        for (MetricResult metric : metrics) {
-            String titleKey = "analytics.metric.title." + metric.getType().name();
-            String descKey = "analytics.metric.desc." + metric.getType().name();
+	private String buildAnalyticsReportText(Long chatId, PeriodReportDto report, String lang, boolean showDetails) {
+		StringBuilder sb = new StringBuilder();
 
-            String title = messageService.getMessage(titleKey, lang);
-            String desc = messageService.getMessage(descKey, lang);
-            
-            // {0}=Title, {1}=Value, {2}=Emoji, {3}=Desc
-            String line = escapeMarkdownV2(messageService.getMessage("analytics.report.metric_line", 
-                    lang, 
-                    title,
-                    metric.getFormattedValue()
-                    //metric.getStatusEmoji(), 
-                    //desc
-            ));
-            sb.append(line).append("\n\n");
+		String goalTitle = messageService.getMessage(report.getGoalName(), lang);
+		String consistencyVerdict = messageService.getMessage(report.getConsistencyVerdictKey(), lang);
+		String periodName = messageService.getMessage(report.getPeriodKey(), lang);
+		
+		// Header
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.header", lang, periodName))).append("\n\n");
+
+		// Summary section
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.summary_section", lang, goalTitle, consistencyVerdict,
+				report.getConsistencyScore()))).append("\n\n");
+		
+		// Stats
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.base_stats_section", lang, report.getTotalActivities(),
+				String.format(Locale.US, "%.1f", report.getTotalDistanceKm()),
+				String.format(Locale.US, "%.1f", report.getTotalDurationHours())))).append("\n\n");
+
+		// Base Metrics (Foundation)
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.base_metrics_header", lang))).append("\n");
+		appendMetricsList(sb, report.getBaseMetrics(), lang, showDetails);
+		sb.append("\n");
+
+		// Smart Insights
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.insights_header", lang))).append("\n");
+		appendMetricsList(sb, report.getAdvancedMetrics(), lang, showDetails);
+		sb.append("\n");
+		
+		// 6. Prediction 
+        if (report.getPredictionMetric() != null) {
+        	sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.predict_header", lang))).append("\n");
+        	appendMetricsList(sb, List.of(report.getPredictionMetric()), lang, showDetails);
+            sb.append("\n");
         }
-    }
+		
+		// Advisor Summary (Behavioral Frame)
+        String advisorText = messageService.getMessage(report.getAdvisorSummaryKey(), lang);
+        String expertBlock = escapeMarkdownV2(
+                messageService.getMessage("analytics.report.advisor_section", lang, advisorText));
+        sb.append(expertBlock).append("\n");
+        
+		// Footer
+		sb.append(escapeMarkdownV2(messageService.getMessage("analytics.report.footer", lang)));
+
+		return sb.toString();
+		
+		/*
+		 * return messageBuilder.createMessageWithKeyboard( chatId, sb.toString(),
+		 * keyboardBuilder.createMainMenuKeyboard(lang) );
+		 */
+	}
 	
+	private void appendMetricsList(StringBuilder sb, List<MetricResult> metrics, String lang, boolean showDetails) {
+		for (MetricResult metric : metrics) {
+			String titleKey = "analytics.metric.title." + metric.getType().name();
+
+			String title = messageService.getMessage(titleKey, lang);
+
+			// {0}=Title, {1}=Value, {2}=Emoji
+			String line = escapeMarkdownV2(
+					messageService.getMessage("analytics.report.metric_line", lang, title, metric.getFormattedValue()));
+			sb.append(line).append("\n");
+
+			if (showDetails) {
+				String descKey = "analytics.metric.desc." + metric.getType().name();
+				String desc = messageService.getMessage(descKey, lang);
+				sb.append(escapeMarkdownV2("   ℹ️ " + desc)).append("\n");
+			}
+			sb.append("\n");
+		}
+	}
+
 }

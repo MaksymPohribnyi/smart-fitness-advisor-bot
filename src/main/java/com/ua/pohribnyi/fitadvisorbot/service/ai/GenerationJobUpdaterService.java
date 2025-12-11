@@ -9,6 +9,7 @@ import com.ua.pohribnyi.fitadvisorbot.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.GenerationJob;
 import com.ua.pohribnyi.fitadvisorbot.repository.ai.GenerationJobRepository;
 import com.ua.pohribnyi.fitadvisorbot.util.concurrency.event.JobDownloadedEvent;
+import com.ua.pohribnyi.fitadvisorbot.util.concurrency.event.JobProcessedEvent;
 
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +70,9 @@ public class GenerationJobUpdaterService {
 
 		job.markAsFailed(errorCode, shortMessage, fullDetails);
 		jobRepository.save(job);
+
+		// Publish FAILED event
+		eventPublisher.publishEvent(new JobProcessedEvent(this, jobId, JobStatus.FAILED));
 	}
 
 	/**

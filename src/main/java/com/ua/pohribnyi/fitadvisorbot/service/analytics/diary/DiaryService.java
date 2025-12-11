@@ -3,21 +3,30 @@ package com.ua.pohribnyi.fitadvisorbot.service.analytics.diary;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.Consumer;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ua.pohribnyi.fitadvisorbot.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.DiaryDraft;
+import com.ua.pohribnyi.fitadvisorbot.model.dto.google.DailyAdviceResponse;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.Activity;
+import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyAdviceJob;
+import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyAdviceJob.Status;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyMetric;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 import com.ua.pohribnyi.fitadvisorbot.repository.data.ActivityRepository;
 import com.ua.pohribnyi.fitadvisorbot.repository.data.DailyMetricRepository;
+import com.ua.pohribnyi.fitadvisorbot.repository.diary.DailyAdviceJobRepository;
 import com.ua.pohribnyi.fitadvisorbot.repository.user.UserProfileRepository;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.GeminiApiClient;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.prompt.GeminiPromptBuilderService;
@@ -25,6 +34,7 @@ import com.ua.pohribnyi.fitadvisorbot.service.analytics.UserPhysiologyService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.TelegramViewService;
 import com.ua.pohribnyi.fitadvisorbot.service.user.UserSessionService;
+import com.ua.pohribnyi.fitadvisorbot.util.concurrency.event.DailyAdviceJobSubmittedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,40 +44,42 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class DiaryService {
 
+	private final DailyAdviceJobRepository jobRepository;
+	private final ApplicationEventPublisher eventPublisher;
 	private final UserSessionService sessionService;
-	private final DailyMetricRepository metricRepository;
-	private final ActivityRepository activityRepository;
-	private final UserProfileRepository profileRepository;
-
-	private final DiaryStateService stateService;
-	private final UserPhysiologyService userPhysiologyService;
 
 	private final TelegramViewService viewService;
-	private final GeminiApiClient geminiClient;
-	private final GeminiPromptBuilderService promptBuilder;
 
 	/**
 	 * Starts the daily check-in flow. Returns SendMessage to be executed by
 	 * CommandHandler or Scheduler.
 	 */
-	public SendMessage startDailyCheckIn(User user) {
-		stateService.getAndRemove(user.getId());
+	@Transactional
+	public SendMessage startDailyCheckIn(User user, boolean isManual) {
+		LocalDate today = LocalDate.now();
+		// Idempotency: If job exists, reuse it or check status
+		DailyAdviceJob job = jobRepository.findByUserAndDate(user, today).orElseGet(() -> createNewJob(user, today));
 		
+		// Reset if it was failed or stuck in filling
+		job.setStatus(Status.FILLING);
+		jobRepository.save(job);
+
 		sessionService.setState(user, UserState.AWAITING_SLEEP);
-		return viewService.getDiaryStartMessage(user.getTelegramUserId());
+		return viewService.getDiaryStartMessage(user.getTelegramUserId(), isManual);
 	}
 
 	public EditMessageText processSleepInput(User user, String data, Integer messageId) {
 		double hours = parseSleepData(data);
-		stateService.updateSleep(user.getId(), hours);
+		updateJob(user, job -> job.setSleepHours(hours));
 
 		sessionService.setState(user, UserState.AWAITING_STRESS);
 		return viewService.getDiaryStressQuestion(user.getTelegramUserId(), messageId);
 	}
 
+	@Transactional
 	public EditMessageText processStressInput(User user, String data, Integer messageId) {
 		int stress = Integer.parseInt(data.split(":")[2]);
-		stateService.updateStress(user.getId(), stress);
+		updateJob(user, job -> job.setStressLevel(stress));
 
 		sessionService.setState(user, UserState.AWAITING_ACTIVITY_CONFIRMATION);
 		return viewService.getDiaryActivityConfirmationQuestion(user.getTelegramUserId(), messageId);
@@ -76,33 +88,37 @@ public class DiaryService {
 	/**
 	 * Returns EditMessageText. If flow ends here (no activity), logic triggers
 	 * Async Advice generation.
+	 * @throws JsonProcessingException 
+	 * @throws JsonMappingException 
 	 */
+	@Transactional
 	public EditMessageText processActivityConfirmation(User user, String data, Integer messageId,
-			FitnessAdvisorBotService bot) {
+			FitnessAdvisorBotService bot) throws JsonMappingException, JsonProcessingException {
 		boolean hadActivity = data.endsWith("yes");
 		Long chatId = user.getTelegramUserId();
-
-		stateService.updateActivityPresence(user.getId(), hadActivity);
+		updateJob(user, job -> job.setHadActivity(hadActivity));
 		
 		if (!hadActivity) {
-			return finishCheckIn(user, messageId, bot, false);
+			return finishCheckIn(user, messageId);
 		} else {
 			sessionService.setState(user, UserState.AWAITING_ACTIVITY_TYPE);
 			return viewService.getDiaryActivityTypeQuestion(chatId, messageId);
 		}
 	}
 
+	@Transactional
 	public EditMessageText processActivityType(User user, String data, Integer messageId) {
 		String type = data.split(":")[2];
-		stateService.updateActivityType(user.getId(), type);
+		updateJob(user, job -> job.setActivityType(type));
 
 		sessionService.setState(user, UserState.AWAITING_ACTIVITY_DURATION);
 		return viewService.getDiaryDurationQuestion(user.getTelegramUserId(), messageId);
 	}
 
+	@Transactional
 	public EditMessageText processActivityDuration(User user, String data, Integer messageId) {
 		int minutes = Integer.parseInt(data.split(":")[2]);
-		stateService.updateDuration(user.getId(), minutes);
+		updateJob(user, job -> job.setDurationMinutes(minutes));
 
 		sessionService.setState(user, UserState.AWAITING_ACTIVITY_INTENSITY);
 		return viewService.getDiaryIntensityQuestion(user.getTelegramUserId(), messageId);
@@ -110,123 +126,62 @@ public class DiaryService {
 
 	@Transactional
 	public EditMessageText processActivityIntensity(User user, String data, Integer messageId,
-			FitnessAdvisorBotService bot) {
+			FitnessAdvisorBotService bot) throws JsonMappingException, JsonProcessingException {
 		int rpe = Integer.parseInt(data.split(":")[2]);
-		stateService.updateRpe(user.getId(), rpe);
-
-		return finishCheckIn(user, messageId, bot, true);
+		updateJob(user, job -> job.setRpe(rpe));
+		return finishCheckIn(user, messageId);
 	}
 
 	/**
 	 * Finalizes the flow: 1. Resets state. 2. Returns "Thinking..." message to UI.
 	 * 3. Triggers Async AI Advice generation.
 	 */
-	private EditMessageText finishCheckIn(User user, Integer messageId, FitnessAdvisorBotService bot,
-			boolean hadActivity) {
+	/*
+	 * private EditMessageText finishCheckIn(User user, Integer messageId,
+	 * FitnessAdvisorBotService bot, boolean hadActivity) throws
+	 * JsonMappingException, JsonProcessingException {
+	 */
+	private EditMessageText finishCheckIn(User user, Integer messageId) {
 		// 1. Retrieve full draft
-		DiaryDraft draft = stateService.getAndRemove(user.getId());
-		if (draft == null) {
-			// Edge case: expired cache or restart
-			sessionService.setState(user, UserState.DEFAULT);
-			return viewService.recoverFromMissingDraft(user, messageId);
-		}
+        DailyAdviceJob job = getJobOrThrow(user);
+        job.setStatus(Status.PENDING_PROCESSING);
+        job.setNotificationMessageId(messageId);
+        job.setUserChatId(user.getTelegramUserId());
+        jobRepository.save(job);
 
-		// 2. Persist to DB (Atomic)
-		persistData(user, draft);
+        // 2. Reset UI State
+        sessionService.setState(user, UserState.DEFAULT);
 
-		// 3. UI & AI
-		sessionService.setState(user, UserState.DEFAULT);
-
-		// Trigger Async AI Generation
-		generateAndSendAdviceAsync(user, draft, bot);
-
+        // 3. Fire Async Event (Decoupled execution)
+        eventPublisher.publishEvent(new DailyAdviceJobSubmittedEvent(job.getId()));
+		
 		return viewService.getDiaryWaitMessage(user.getTelegramUserId(), messageId);
 	}
 
-	@Transactional
-	protected void persistData(User user, DiaryDraft draft) {
-		LocalDate today = LocalDate.now();
-		
-		// 1. Save Metrics
-		DailyMetric metric = metricRepository.findMetricsByUserAndDateAfter(user, today).stream()
-				.filter(m -> m.getDate().equals(today))
-				.findFirst()
-				.orElse(new DailyMetric());
-
-		metric.setUser(user);
-		metric.setDate(today);
-		metric.setSynthetic(false);
-		
-		if (draft.getSleepHours() != null)
-			metric.setSleepHours(draft.getSleepHours());
-		if (draft.getStressLevel() != null)
-			metric.setStressLevel(draft.getStressLevel());
-		
-		// SIMPLE STEP LOGIC: 5500 base + 1500 if active
-        int totalSteps = UserPhysiologyService.BASE_DAILY_STEPS;
-        if (draft.isHadActivity()) {
-            totalSteps += UserPhysiologyService.ACTIVITY_BONUS_STEPS;
-        }
-        metric.setDailyBaseSteps(totalSteps);
-		
-		metricRepository.save(metric);
-
-		// 2. Save Activity if present
-		if (draft.isHadActivity()) {
-			Activity activity = new Activity();
-			activity.setUser(user);
-			activity.setSynthetic(false);
-
-			// Logic: Morning input -> Yesterday evening. Evening input -> Today evening.
-			LocalDateTime activityDate = LocalDateTime.now().getHour() < 12
-					? LocalDateTime.now().minusDays(1).withHour(19)
-					: LocalDateTime.now().withHour(18);
-			activity.setDateTime(activityDate);
-
-			activity.setType(draft.getActivityType());
-			activity.setDurationSeconds(draft.getDurationMinutes() * 60);
-
-			// Calc Pulse from RPE
-			int rpe = draft.getRpe() != null ? draft.getRpe() : 5;
-			int estimatedPulse = 90 + (rpe * 9);
-			activity.setAvgPulse(estimatedPulse);
-			activity.setMaxPulse(estimatedPulse + 20);
-
-			// Calc Calories (approx)
-			activity.setCaloriesBurned(draft.getDurationMinutes() * (rpe + 2));
-
-			// Calc Steps (NEW Feature)
-			int steps = userPhysiologyService.calculateSteps(draft.getActivityType(), draft.getDurationMinutes(), rpe);
-			activity.setActivitySteps(steps);
-			// Rough distance approx
-			activity.setDistanceMeters((int) (steps * 0.75));
-
-			activityRepository.save(activity);
-		}
-	}
-	
-	@Async("aiGenerationExecutor") // Use existing pool
-	public void generateAndSendAdviceAsync(User user, DiaryDraft draft, FitnessAdvisorBotService bot) {
-			UserProfile profile = profileRepository.findByUser(user)
-					.orElseThrow(() -> new IllegalStateException("UserProfile missing for user " + user.getId()));
-
-			DailyMetric todayMetric = new DailyMetric(); 
-			todayMetric.setSleepHours(draft.getSleepHours());
-			todayMetric.setStressLevel(draft.getStressLevel());
-			
-			List<Activity> recentActivities = activityRepository.findActivitiesByUserAndDateAfter(user,
-					LocalDateTime.now().minusDays(7));
-
-			String prompt = promptBuilder.buildDailyAdvicePrompt(profile, recentActivities, todayMetric, draft.isHadActivity());
-			log.debug("Generated AI prompt for daily advice for user {}: {}", user.getId(), prompt);
-			String advice = geminiClient.generateText(prompt); // Ensure generateText exists in Client
-			
-			SendMessage adviceMsg = viewService.getDiaryAdviceMessage(user.getTelegramUserId(), advice);
-			bot.sendMessage(adviceMsg);
-	}
 
 	// --- Helpers ---
+	private DailyAdviceJob createNewJob(User user, LocalDate date) {
+		return jobRepository.save(DailyAdviceJob.builder()
+				.user(user)
+				.date(date)
+				.status(Status.FILLING)
+				.createdAt(LocalDateTime.now())
+				.updatedAt(LocalDateTime.now())
+				.build());
+	}
 
+	private void updateJob(User user, Consumer<DailyAdviceJob> updater) {
+		DailyAdviceJob job = getJobOrThrow(user);
+		updater.accept(job);
+		job.setUpdatedAt(LocalDateTime.now());
+		jobRepository.save(job);
+	}
+
+	private DailyAdviceJob getJobOrThrow(User user) {
+		return jobRepository.findByUserAndDate(user, LocalDate.now())
+				.orElseThrow(() -> new IllegalStateException("No active job found for user " + user.getId()));
+	}
+	
 	private double parseSleepData(String data) {
 		if (data.endsWith("bad"))
 			return 5.0;

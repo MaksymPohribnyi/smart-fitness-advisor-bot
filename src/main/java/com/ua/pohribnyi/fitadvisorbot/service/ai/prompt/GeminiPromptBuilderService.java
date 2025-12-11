@@ -12,78 +12,14 @@ import com.ua.pohribnyi.fitadvisorbot.model.entity.Activity;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyMetric;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class GeminiPromptBuilderService {
 
-	private static final String HISTORY_PROMPT_TEMPLATE = """
-			You are a fitness data simulator. Generate realistic 30-day history.
-
-			PROFILE: %s level, Goal: %s, End date: %s
-
-			REQUIREMENTS:
-			1. Exactly 28-30 dailyMetrics (one per day, sequential backwards from %s)
-			2. Exactly %d-%d activities total (for entire month)
-			3. Activity types: %s
-
-			RANGES (vary naturally, not constant values):
-			- Sleep: %.1f-%.1f hours
-			- DailyBaseSteps: %d-%d (excluding workout steps)
-			- Stress: %d-%d (1=low, 5=high)
-
-			ACTIVITY RULES (for %s level):
-			%s
-
-			STEP CALCULATION:
-			- Running: steps = distanceMeters / 1.3 (range: distance/1.4 to distance/1.2)
-			- Walking: steps = distanceMeters / 0.75 (range: distance/0.8 to distance/0.7)
-			- Cycling/Workout: steps = 0
-
-			CORRELATIONS:
-			- Sleep <6h → next day: stress+1, avgPulse+10
-			- Hard workout (pulse>165 or >50min) → next day: light/rest
-			- Stress 4-5 → reduce steps by 30%%
-			- Include 2-3 "bad days" (poor sleep, low activity, high stress)
-
-			VALIDATION:
-			- maxPulse = avgPulse + (15 to 35)
-			- minPulse = avgPulse - (20 to 40)
-			- Running pace: 4:30-10:00 min/km | Cycling: 14-35 km/h
-			- NO 3 consecutive high-intensity days
-
-			Output ONLY valid JSON.
-			""";
-
+	private final PromptService promptService;
 	private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("MM-dd");
-
-	private static final String DAILY_ADVICE_TEMPLATE = """
-			Role: Motivational Sports Psychologist & Analytics Mentor.
-			Task: Give a short, personalized Daily Insight based on user data.
-			Language: Ukrainian.
-
-			USER PROFILE:
-			- Level: %s
-			- Goal: %s
-
-			TODAY'S CHECK-IN:
-			- Sleep: %.1f h (Norm: 7-8h)
-			- Stress: %d/5 (1=Zen, 5=High)
-			- Activity Yesterday: %s
-
-			WEEKLY HISTORY (JSON):
-			```json
-			%s
-			```
-
-			INSTRUCTIONS:
-			1. **Analyze Context**: Look at the JSON history. Is there a streak? Gaps? High intensity yesterday?
-			2. **Vector**:
-			   - If recovering (bad sleep/stress): Suggest restoration.
-			   - If momentum is high: Praise consistency.
-			   - If stuck: Suggest a micro-step.
-			3. **Format**: Plain text, max 3 sentences. Empathic tone.
-
-			Output ONLY the advice text.
-			""";
 
 	public String buildOnboardingPrompt(UserProfile profile) {
 		String level = profile.getLevel() != null ? profile.getLevel() : "beginner";
@@ -100,7 +36,7 @@ public class GeminiPromptBuilderService {
 
 		int maxActivities = minActivities + 4;
 
-        return String.format(Locale.US, HISTORY_PROMPT_TEMPLATE,
+        return promptService.format("ai.history-generation",
                 // Context
                 level, goal, today,
                 today,
@@ -126,8 +62,7 @@ public class GeminiPromptBuilderService {
 
 		String historyJson = formatActivitiesToJson(weekActivities);
 
-		return String.format(Locale.US, 
-				DAILY_ADVICE_TEMPLATE, 
+		return promptService.format("ai.daily-advice", 
 				level, 
 				goal, 
 				sleep, 
@@ -137,20 +72,19 @@ public class GeminiPromptBuilderService {
 	}
 
 	private String formatActivitiesToJson(List<Activity> activities) {
-		if (activities.isEmpty())
-			return "[]";
-
-		return activities.stream()
-				.map(a -> String.format(Locale.US, "{\"date\":\"%s\", "
-						+ "\"type\":\"%s\", "
-						+ "\"mins\":%d, "
-						+ "\"pulse\":%d}",
-						a.getDateTime().format(DATE_FMT), 
-						a.getType() != null ? a.getType() : "Workout",
-						a.getDurationSeconds() / 60, 
-						a.getAvgPulse() != null ? a.getAvgPulse() : 0))
-				.collect(Collectors.joining(", ", "[", "]"));
-	}
+        if (activities.isEmpty()) {
+            return "[]";
+        }
+        return activities.stream()
+                .map(a -> String.format(Locale.US,
+                        "{\"date\":\"%s\", \"type\":\"%s\", \"mins\":%d, \"pulse\":%d}",
+                        a.getDateTime().format(DATE_FMT),
+                        a.getType() != null ? a.getType() : "Workout",
+                        a.getDurationSeconds() / 60,
+                        a.getAvgPulse() != null ? a.getAvgPulse() : 0
+                ))
+                .collect(Collectors.joining(", ", "[", "]"));
+    }
 
 	private record GenerationConfig(double minSleep, double maxSleep, int minSteps, int maxSteps, int minStress,
 			int maxStress, String activityPatterns, String activityDistribution) {

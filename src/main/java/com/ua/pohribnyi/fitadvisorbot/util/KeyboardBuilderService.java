@@ -83,14 +83,16 @@ public class KeyboardBuilderService {
 				.keyboardRow(List.of(InlineKeyboardButton.builder().text(buttonText).url(url).build())).build();
 	}
 
-	public InlineKeyboardMarkup createJobRetryKeyboard(String lang, Long jobId) {
-		return InlineKeyboardMarkup.builder()
-				.keyboardRow(List
-						.of(InlineKeyboardButton.builder().text(messageService.getMessage("onboarding.job.retry", lang))
-								.callbackData("job:retry:" + jobId).build()))
-				.build();
-	}
+	public InlineKeyboardMarkup createAnalyticsKeyboard(String lang, boolean isExpanded, String periodKey) {
+		String textKey = isExpanded ? "analytics.report.button.hide" : "analytics.report.button.explain";
 
+		String action = isExpanded ? "collapse" : "expand";
+		String callbackData = String.format("analytics:%s:%s", action, periodKey);
+
+		return InlineKeyboardMarkup.builder().keyboardRow(List.of(InlineKeyboardButton.builder()
+				.text(messageService.getMessage(textKey, lang)).callbackData(callbackData).build())).build();
+	}
+	
 	public InlineKeyboardMarkup createAgeSelectionKeyboard(String lang) {
 		return InlineKeyboardMarkup.builder()
 				.keyboardRow(
@@ -112,9 +114,8 @@ public class KeyboardBuilderService {
 	public InlineKeyboardMarkup createStressRatingKeyboard(String lang) {
 		return InlineKeyboardMarkup.builder()
 				.keyboardRow(List.of(createBtn("diary.stress.low", "diary:stress:1", lang),
-						createBtn("diary.stress.med", "diary:stress:3", lang),
-						createBtn("diary.stress.high", "diary:stress:5", lang)))
-				.build();
+						createBtn("diary.stress.med", "diary:stress:3", lang)))
+				.keyboardRow(List.of(createBtn("diary.stress.high", "diary:stress:5", lang))).build();
 	}
 
 	public InlineKeyboardMarkup createActivityConfirmationKeyboard(String lang) {

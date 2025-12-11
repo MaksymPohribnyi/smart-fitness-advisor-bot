@@ -3,6 +3,7 @@ package com.ua.pohribnyi.fitadvisorbot.service.ai;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ import com.google.genai.types.Part;
 import com.ua.pohribnyi.fitadvisorbot.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.factory.GeminiConfigFactory;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.schema.GeminiSchemaDefiner;
+import com.ua.pohribnyi.fitadvisorbot.util.concurrency.event.JobProcessedEvent;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
@@ -41,7 +43,6 @@ public class GeminiApiClient {
 	 * @param jobId  Database ID of the generation job
 	 * @param prompt Formatted prompt for Gemini API
 	 */
-	@Async("aiGenerationExecutor")
 	public void generateAndStageHistory(Long jobId, String prompt) {
 		String threadName = Thread.currentThread().getName();
 		log.info("[Thread: {}] Starting generation for job {}", threadName, jobId);
@@ -113,7 +114,7 @@ public class GeminiApiClient {
 				.parts(Part.builder().text(prompt).build())
 				.build();
 
-		GenerateContentConfig config = configFactory.createCreativeConfig();
+		GenerateContentConfig config = configFactory.createCreativeConfig(schemaDefiner.getDailyAdviceSchema());
 		GenerateContentResponse response = geminiClient.models.generateContent(MODEL_NAME, List.of(content), config);
 
 		return extractResponseText(response);
@@ -131,26 +132,26 @@ public class GeminiApiClient {
 		// Fallback: extract from candidates structure
 		// candidates() returns Optional<List<Candidate>>
 		if (response.candidates().isEmpty()) {
-			log.warn("No candidates in Gemini response");
-			return null;
+			log.error("No candidates in Gemini response: {}", response);
+			throw new IllegalStateException("Gemini response has no candidates");
 		}
 
 		List<Candidate> candidates = response.candidates().get();
 		if (candidates.isEmpty()) {
-			log.warn("Empty candidates list in Gemini response");
-			return null;
+			log.error("Empty candidates list in Gemini response: {}", response);
+			throw new IllegalStateException("Gemini candidates list is empty");
 		}
 
 		Candidate firstCandidate = candidates.get(0);
 		if (firstCandidate.content() == null) {
-			log.warn("No content in first candidate");
-			return null;
+			log.error("No content in first candidate");
+			throw new IllegalStateException("First candidate has no content");
 		}
 
 		Optional<Content> content = firstCandidate.content();
 		if (content.isEmpty() || content.get().parts() == null || content.get().parts().isEmpty()) {
-			log.warn("No parts in candidate content");
-			return null;
+			log.error("No parts in candidate content");
+			throw new IllegalStateException("Candidate content has no parts");
 		}
 
 		// Find first non-empty text part

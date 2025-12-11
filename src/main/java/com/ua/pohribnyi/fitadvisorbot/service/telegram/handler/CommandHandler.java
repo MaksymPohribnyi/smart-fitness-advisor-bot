@@ -38,12 +38,8 @@ public class CommandHandler {
 
         if (message.getText().equals("/start")) {
             log.info("Processing global /start for user {}", user.getTelegramUserId());
-            
-            // Check the user's *true* state
             UserState currentState = userSessionService.findOrCreateSession(user).getState();
-            
             if (currentState == UserState.DEFAULT || currentState == UserState.ONBOARDING_COMPLETED) {
-                // User is already registered, just send welcome back
             	handleStartForExistingUser(chatId, user, bot);
             } else {
                 handleStartForNewUser(chatId, user, bot);
@@ -103,7 +99,7 @@ public class CommandHandler {
 	
 	private SendMessage handleDiaryCommand(User user) {
 		log.info("User {} requested Diary manually", user.getId());
-        return diaryService.startDailyCheckIn(user);
+        return diaryService.startDailyCheckIn(user, true);
     }
 
     private SendMessage handleAnalyticsCommand(Long chatId, User user) {

@@ -1,5 +1,6 @@
 package com.ua.pohribnyi.fitadvisorbot.util.concurrency.listener;
 
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -15,6 +16,7 @@ public class JobCreationListener {
     
 	private final GeminiApiClient geminiApiClient; 
 	
+	@Async("aiGenerationExecutor")
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void onJobCreated(JobCreatedEvent event) {
 		geminiApiClient.generateAndStageHistory(event.getJobId(), event.getPrompt());

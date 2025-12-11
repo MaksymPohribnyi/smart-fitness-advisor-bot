@@ -16,7 +16,7 @@ public class MessageSourceConfig {
 		messageSource.setUseCodeAsDefaultMessage(true);
 		messageSource.setFallbackToSystemLocale(false);
 		messageSource.setResourceLoader(resourceLoader);
-		// messageSource.setCacheSeconds(3600); for production?!
+		messageSource.setCacheSeconds(3600); 
 		return messageSource;
 	}
 
