@@ -2,11 +2,9 @@ package com.ua.pohribnyi.fitadvisorbot.service.analytics.diary;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.function.Consumer;
 
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -14,23 +12,11 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageTe
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ua.pohribnyi.fitadvisorbot.enums.UserState;
-import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.DiaryDraft;
-import com.ua.pohribnyi.fitadvisorbot.model.dto.google.DailyAdviceResponse;
-import com.ua.pohribnyi.fitadvisorbot.model.entity.Activity;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyAdviceJob;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyAdviceJob.Status;
-import com.ua.pohribnyi.fitadvisorbot.model.entity.DailyMetric;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
-import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
-import com.ua.pohribnyi.fitadvisorbot.repository.data.ActivityRepository;
-import com.ua.pohribnyi.fitadvisorbot.repository.data.DailyMetricRepository;
 import com.ua.pohribnyi.fitadvisorbot.repository.diary.DailyAdviceJobRepository;
-import com.ua.pohribnyi.fitadvisorbot.repository.user.UserProfileRepository;
-import com.ua.pohribnyi.fitadvisorbot.service.ai.GeminiApiClient;
-import com.ua.pohribnyi.fitadvisorbot.service.ai.prompt.GeminiPromptBuilderService;
-import com.ua.pohribnyi.fitadvisorbot.service.analytics.UserPhysiologyService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.TelegramViewService;
 import com.ua.pohribnyi.fitadvisorbot.service.user.UserSessionService;

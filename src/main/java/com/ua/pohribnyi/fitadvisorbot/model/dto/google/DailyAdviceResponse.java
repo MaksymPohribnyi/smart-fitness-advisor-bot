@@ -21,6 +21,6 @@ public class DailyAdviceResponse {
 	private String advice;
 
 	public String getFullMessage() {
-		return String.format("%s %s %s", analysis, status, advice).trim();
+		return String.join("\n\n", analysis, status, advice).trim();
 	}
 }

@@ -9,7 +9,9 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageTe
 
 import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto.MetricResult;
+import com.ua.pohribnyi.fitadvisorbot.model.dto.google.DailyAdviceResponse;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
+import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
 import com.ua.pohribnyi.fitadvisorbot.util.KeyboardBuilderService;
 
 import lombok.RequiredArgsConstructor;
@@ -59,7 +61,7 @@ public class TelegramViewService {
 		String text = escapeMarkdownV2(messageService.getMessage("onboarding.level.question", lang));
 
 		return messageBuilder.createMessageWithKeyboard(chatId, text,
-				keyboardBuilder.createLevelSelectionKeyboard(lang));
+				keyboardBuilder.createLevelSelectionKeyboard(lang, "onboarding", false));
 	}
 
 	/**
@@ -70,7 +72,7 @@ public class TelegramViewService {
 		String text = escapeMarkdownV2(messageService.getMessage("onboarding.goal.question", lang));
 
 		return messageBuilder.createEditMessageWithKeyboard(chatId, messageId, text,
-				keyboardBuilder.createGoalSelectionKeyboard(lang));
+				keyboardBuilder.createGoalSelectionKeyboard(lang, "onboarding", false));
 	}
 
 	public SendMessage getGenerationWaitMessage(Long chatId) {
@@ -173,12 +175,13 @@ public class TelegramViewService {
         return messageBuilder.createEditMessage(chatId, messageId, text); 
     }
     
-    public SendMessage getDiaryAdviceMessage(Long chatId, String adviceText) {
+    public SendMessage getDiaryAdviceMessage(Long chatId, DailyAdviceResponse advice) {
         String lang = messageService.getLangCode(chatId);
-    	String safeText = escapeMarkdownV2(adviceText);
-        String header = escapeMarkdownV2(messageService.getMessage("diary.generating.header", lang));
-        return messageBuilder.createMessage(chatId, header + safeText);
-    }
+    	
+		String text = escapeMarkdownV2(messageService.getMessage("diary.generating.template", lang,
+				advice.getAnalysis(), advice.getStatus(), advice.getAdvice()));
+		return messageBuilder.createMessage(chatId, text);
+	}
 
     public EditMessageText recoverFromMissingDraft(User user, Integer messageId) {
         // Returns a "Session expired" message update
@@ -186,8 +189,69 @@ public class TelegramViewService {
         String text = escapeMarkdownV2(messageService.getMessage("diary.error.missing_draft", lang));
 		return messageBuilder.createEditMessage(user.getTelegramUserId(), messageId, text);
     }
+
+	public SendMessage getSettingsMessage(Long chatId, User user, UserProfile profile, boolean isStravaConnected) {
+		String text = buildSettingsText(chatId, user, profile, isStravaConnected);
+		String lang = messageService.getLangCode(chatId);
+		return messageBuilder.createMessageWithKeyboard(chatId, text,
+				keyboardBuilder.createSettingsKeyboard(lang, isStravaConnected));
+
+	}
+	
+	/**
+	 * Updates the existing message to show the settings dashboard.
+	 */
+	public EditMessageText getSettingsEditMessage(Long chatId, Integer messageId, User user, UserProfile profile,
+			boolean isStravaConnected) {
+		String text = buildSettingsText(chatId, user, profile, isStravaConnected);
+		String lang = messageService.getLangCode(chatId);
+
+		return messageBuilder.createEditMessageWithKeyboard(chatId, messageId, text,
+				keyboardBuilder.createSettingsKeyboard(lang, isStravaConnected));
+	}
+
+	/**
+     * Edit-version of the Goal question.
+     */
+    public EditMessageText getSettingsGoalEditMessage(Long chatId, Integer messageId) {
+        String lang = messageService.getLangCode(chatId);
+        String text = escapeMarkdownV2(messageService.getMessage("settings.edit.choose_goal", lang));
+        return messageBuilder.createEditMessageWithKeyboard(chatId, messageId, text,
+                keyboardBuilder.createGoalSelectionKeyboard(lang, "settings", true));
+    }
+
+    /**
+     * Edit-version of the Level question.
+     */
+    public EditMessageText getSettingsLevelEditMessage(Long chatId, Integer messageId) {
+        String lang = messageService.getLangCode(chatId);
+        String text = escapeMarkdownV2(messageService.getMessage("settings.edit.choose_level", lang));
+        return messageBuilder.createEditMessageWithKeyboard(chatId, messageId, text,
+                keyboardBuilder.createLevelSelectionKeyboard(lang, "settings", true));
+    }
+
+    /**
+     * Edit-version of the Age question.
+     */
+    public EditMessageText getOnboardingAgeQuestionEdit(Long chatId, Integer messageId) {
+        String lang = messageService.getLangCode(chatId);
+        String text = escapeMarkdownV2(messageService.getMessage("onboarding.age.question", lang));
+        return messageBuilder.createEditMessageWithKeyboard(chatId, messageId, text,
+                keyboardBuilder.createAgeSelectionKeyboard(lang));
+    }
     
-	public static String escapeMarkdownV2(String text) {
+    /**
+     * Shows Strava connect link by editing the message.
+     */
+    public EditMessageText getStravaConnectMessageEdit(Long chatId, Integer messageId, String authUrl) {
+        String lang = messageService.getLangCode(chatId);
+        String text = escapeMarkdownV2(messageService.getMessage("strava.connect_message", lang));
+        
+        return messageBuilder.createEditMessageWithKeyboard(chatId, messageId, text,
+                keyboardBuilder.createUrlButtonKeyboard(messageService.getMessage("button.authorize_strava", lang), authUrl));
+    }
+
+    public static String escapeMarkdownV2(String text) {
 		if (text == null || text.isEmpty()) {
 			return text;
 		}
@@ -201,6 +265,27 @@ public class TelegramViewService {
 		return result.toString();
 	}
 
+    private String buildSettingsText(Long chatId, User user, UserProfile profile, boolean isStravaConnected) {
+    	String lang = messageService.getLangCode(chatId);
+
+		// Safe access to profile fields with fallback
+		String goalText = profile.getGoal() != null
+				? messageService.getMessage("onboarding.goal." + profile.getGoal().toLowerCase(), lang)
+				: "N/A";
+
+		String levelText = profile.getLevel() != null
+				? messageService.getMessage("onboarding.level." + profile.getLevel().toLowerCase(), lang)
+				: "N/A";
+
+		String ageText = profile.getAge() != null ? String.valueOf(profile.getAge()) : "N/A";
+
+		String stravaStatus = isStravaConnected ? messageService.getMessage("settings.strava_status.connected", lang)
+				: messageService.getMessage("settings.strava_status.disconnected", lang);
+
+		return escapeMarkdownV2(messageService.getMessage("settings.header", lang, user.getFirstName(), ageText,
+				levelText, goalText, stravaStatus));
+	}
+    
 	private String buildAnalyticsReportText(Long chatId, PeriodReportDto report, String lang, boolean showDetails) {
 		StringBuilder sb = new StringBuilder();
 
@@ -248,10 +333,6 @@ public class TelegramViewService {
 
 		return sb.toString();
 		
-		/*
-		 * return messageBuilder.createMessageWithKeyboard( chatId, sb.toString(),
-		 * keyboardBuilder.createMainMenuKeyboard(lang) );
-		 */
 	}
 	
 	private void appendMetricsList(StringBuilder sb, List<MetricResult> metrics, String lang, boolean showDetails) {
@@ -268,7 +349,7 @@ public class TelegramViewService {
 			if (showDetails) {
 				String descKey = "analytics.metric.desc." + metric.getType().name();
 				String desc = messageService.getMessage(descKey, lang);
-				sb.append(escapeMarkdownV2("   ℹ️ " + desc)).append("\n");
+				sb.append(escapeMarkdownV2("_" + desc + "_")).append("\n");
 			}
 			sb.append("\n");
 		}

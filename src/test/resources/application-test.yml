@@ -1,17 +1,16 @@
 spring:
+  application:
+    name: fitadvisor-bot-test
+
   datasource:
-    # H2 in-memory database for testing
-    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
+    driver-class-name: org.postgresql.Driver
     
   jpa:
     hibernate:
       ddl-auto: create-drop  # Recreate schema for each test run
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: false  
     
@@ -23,10 +22,22 @@ strava:
   client-id: fake-test-id
   client-secret: fake-test-secret
   redirect-uri: http://localhost:8080/test
+  api:
+    base-url: https://www.fake-test.com
+    activities-url: https://www.fake-test.com/api/v3/athlete/activities
+  auth:
+    token-url: https://www.fake-test.com/api/v3/oauth/token
+    authorize-url: https://www.fake-test.com/oauth/authorize
+  scopes: read,activity:read_all
 
 google:
   gemini:
     api-key: fake-key-for-tests
+
+telegram:
+  bot:
+    token: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+    username: TestFitBot
 
 # Resilience4j test config
 resilience4j:
@@ -36,24 +47,24 @@ resilience4j:
         limit-for-period: 10
         limit-refresh-period: 1s
         timeout-duration: 2s
-        
   circuitbreaker:
     instances:
       geminiApi:
         minimum-number-of-calls: 3
         failure-rate-threshold: 50
-        wait-duration-in-open-state: 5s
-        
+        wait-duration-in-open-state: 1s 
   retry:
     instances:
       geminiApi:
-        max-attempts: 3
-        wait-duration: 100ms
+        max-attempts: 2
+        wait-duration: 50ms
 
-# Logging
+security:
+  encryption:
+    key: mybase64encodedaes256securitykey
+
 logging:
   level:
-    org.hibernate.SQL: ERROR
-    org.springframework: WARN
+    root: INFO
     com.ua.pohribnyi: DEBUG
-    io.github.resilience4j: DEBUG
+    org.hibernate.SQL: WARN 

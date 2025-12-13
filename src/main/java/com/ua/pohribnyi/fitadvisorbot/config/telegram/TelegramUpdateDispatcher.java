@@ -20,12 +20,17 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class TelegramUpdateDispatcher {
 
+	private static final String PREFIX_ONBOARDING = "onboarding:";
 	private final CommandHandler commandHandler;
 	private final CallbackQueryHandler callbackQueryHandler;
 	private final UserService userService;
 	private final UserSessionService userSessionService;
 	private final TelegramErrorHandler errorHandler;
 
+	private static final String PREFIX_DIARY = "diary:";
+    private static final String PREFIX_ANALYTICS = "analytics:";
+    private static final String PREFIX_SETTINGS = "settings:";
+	
 	public void dispatch(Update update, FitnessAdvisorBotService bot) {
 		try {
 			// 1. Get the Telegram User object from the update
@@ -73,6 +78,16 @@ public class TelegramUpdateDispatcher {
 					log.debug("User {} sent text during diary flow, ignoring.", user.getId());
 				}
 				break;
+			case SETTINGS_EDITING:
+				if (update.hasCallbackQuery()) {
+					String data = update.getCallbackQuery().getData();
+					if (data.startsWith("settings:")) {
+						callbackQueryHandler.handleSettingsCallback(update.getCallbackQuery(), user, bot);
+					}
+				} else if (update.hasMessage() && update.getMessage().hasText()) {
+					commandHandler.handleDefaultCommand(update.getMessage(), user, bot);
+				}
+				break;
 			case DEFAULT:
 			case ONBOARDING_COMPLETED:
 			default:
@@ -93,8 +108,21 @@ public class TelegramUpdateDispatcher {
 			// Send ALL text (commands AND menu buttons) to the CommandHandler
 			commandHandler.handleDefaultCommand(update.getMessage(), user, bot);
 		} else if (update.hasCallbackQuery()) {
+			String data = update.getCallbackQuery().getData();
 			// Send to the *default* callback handler (e.g., for Strava, Settings)
-			callbackQueryHandler.handleDefaultCallback(update.getCallbackQuery(), user, bot);
+			if (data != null) {
+				if (data.startsWith(PREFIX_DIARY)) {
+					callbackQueryHandler.handleDiaryCallback(update.getCallbackQuery(), user, bot);
+				} else if (data.startsWith(PREFIX_ANALYTICS)) {
+					callbackQueryHandler.handleAnalyticsCallback(update.getCallbackQuery(), user, bot);
+				} else if (data.startsWith(PREFIX_SETTINGS)) {
+					callbackQueryHandler.handleSettingsCallback(update.getCallbackQuery(), user, bot);
+				} else if (data.startsWith(PREFIX_ONBOARDING)) {
+					callbackQueryHandler.handleOnboardingCallback(update.getCallbackQuery(), user, bot);
+				} else {
+					callbackQueryHandler.handleDefaultCallback(update.getCallbackQuery(), user, bot);
+				}
+			}
 		} else {
 			log.warn("Received unhandled update type in DEFAULT state: {}", update);
 		}

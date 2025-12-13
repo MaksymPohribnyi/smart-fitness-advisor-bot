@@ -1,5 +1,6 @@
 package com.ua.pohribnyi.fitadvisorbot.util;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -20,59 +21,76 @@ public class KeyboardBuilderService {
 	private final MessageService messageService;
 
 	/**
-	 * Creates global ReplyKeyboardMarkup (buttons upside). 
+	 * Creates global ReplyKeyboardMarkup (buttons upside).
 	 * 
 	 * @param lang User language code
 	 * @return Already built keyboard
 	 */
 	public ReplyKeyboardMarkup createMainMenuKeyboard(String lang) {
-			return ReplyKeyboardMarkup.builder()
-					.keyboard(List.of(
-							new KeyboardRow(List.of(
-									new KeyboardButton(messageService.getMessage("menu.diary", lang)),
-									new KeyboardButton(messageService.getMessage("menu.analytics", lang)))),
-							new KeyboardRow(List.of(
-									new KeyboardButton(messageService.getMessage("menu.settings", lang))))))
-					.resizeKeyboard(true)
-					.oneTimeKeyboard(false)
-					.build();
+		return ReplyKeyboardMarkup.builder()
+				.keyboard(List.of(
+						new KeyboardRow(List.of(
+								new KeyboardButton(messageService.getMessage("menu.diary", lang)),
+								new KeyboardButton(messageService.getMessage("menu.analytics", lang)))),
+						new KeyboardRow(List.of(
+								new KeyboardButton(messageService.getMessage("menu.settings", lang))))))
+				.resizeKeyboard(true)
+				.oneTimeKeyboard(false)
+				.build();
 	}
 
+	/**
+     * Creates a goal selection keyboard.
+     * @param prefix Defines context: "onboarding" or "settings:save"
+     * @param includeBackBtn Adds a "Back" button for Settings context
+     */
+	public InlineKeyboardMarkup createGoalSelectionKeyboard(String lang, String prefix, boolean includeBackBtn) {
+		var builder = InlineKeyboardMarkup.builder();
+		
+		builder.keyboardRow(List.of(InlineKeyboardButton.builder()
+				.text(messageService.getMessage("onboarding.goal.lose_weight", lang))
+				.callbackData(prefix + ":goal:lose_weight").build()))
+		.keyboardRow(List.of(InlineKeyboardButton.builder()
+				.text(messageService.getMessage("onboarding.goal.run_10k", lang))
+				.callbackData(prefix +  ":goal:run_10k").build()))
+		.keyboardRow(List.of(InlineKeyboardButton.builder()
+				.text(messageService.getMessage("onboarding.goal.build_muscle", lang))
+				.callbackData(prefix +  ":goal:build_muscle").build()))
+		.keyboardRow(List.of(InlineKeyboardButton.builder()
+				.text(messageService.getMessage("onboarding.goal.health", lang))
+				.callbackData(prefix + ":goal:health").build()));
+		
+		if (includeBackBtn) {
+			builder.keyboardRow(List.of(InlineKeyboardButton.builder()
+					.text(messageService.getMessage("settings.btn.back", lang))
+					.callbackData("settings:nav:main").build()));
+		}
+		return builder.build();
+	}
+	
 	/**
 	 * Creates onboarding level selection keyboard.
 	 */
-	public InlineKeyboardMarkup createLevelSelectionKeyboard(String lang) {
-		return InlineKeyboardMarkup.builder()
-				.keyboardRow(List.of(InlineKeyboardButton.builder()
-						.text(messageService.getMessage("onboarding.level.beginner", lang))
-						.callbackData("onboarding:level:beginner").build()))
-				.keyboardRow(List.of(InlineKeyboardButton.builder()
-						.text(messageService.getMessage("onboarding.level.moderate", lang))
-						.callbackData("onboarding:level:moderate").build()))
-				.keyboardRow(List
-						.of(InlineKeyboardButton.builder().text(messageService.getMessage("onboarding.level.pro", lang))
-								.callbackData("onboarding:level:pro").build()))
-				.build();
-	}
+	public InlineKeyboardMarkup createLevelSelectionKeyboard(String lang, String prefix, boolean includeBackBtn) {
+		var builder = InlineKeyboardMarkup.builder();
+		
+		builder.keyboardRow(List.of(InlineKeyboardButton.builder()
+				.text(messageService.getMessage("onboarding.level.beginner", lang))
+				.callbackData(prefix + ":level:beginner").build()))
+		.keyboardRow(List.of(InlineKeyboardButton.builder()
+				.text(messageService.getMessage("onboarding.level.moderate", lang))
+				.callbackData(prefix + ":level:moderate").build()))
+		.keyboardRow(List.of(InlineKeyboardButton.builder()
+				.text(messageService.getMessage("onboarding.level.pro", lang))
+				.callbackData(prefix + ":level:pro").build()));
+		
+		if (includeBackBtn) {
+			builder.keyboardRow(List.of(InlineKeyboardButton.builder()
+					.text(messageService.getMessage("settings.btn.back", lang))
+					.callbackData("settings:nav:main").build()));
+		}
 
-	/**
-	 * Creates onboarding goal selection keyboard.
-	 */
-	public InlineKeyboardMarkup createGoalSelectionKeyboard(String lang) {
-		return InlineKeyboardMarkup.builder()
-				.keyboardRow(List.of(InlineKeyboardButton.builder()
-						.text(messageService.getMessage("onboarding.goal.lose_weight", lang))
-						.callbackData("onboarding:goal:lose_weight").build()))
-				.keyboardRow(List.of(
-						InlineKeyboardButton.builder().text(messageService.getMessage("onboarding.goal.run_10k", lang))
-								.callbackData("onboarding:goal:run_10k").build()))
-				.keyboardRow(List.of(InlineKeyboardButton.builder()
-						.text(messageService.getMessage("onboarding.goal.build_muscle", lang))
-						.callbackData("onboarding:goal:build_muscle").build()))
-				.keyboardRow(List.of(
-						InlineKeyboardButton.builder().text(messageService.getMessage("onboarding.goal.health", lang))
-								.callbackData("onboarding:goal:health").build()))
-				.build();
+        return builder.build();
 	}
 
 	/**
@@ -166,6 +184,18 @@ public class KeyboardBuilderService {
             .build();
     }
 
+	public InlineKeyboardMarkup createSettingsKeyboard(String lang, boolean isStravaConnected) {
+		String stravaKey = isStravaConnected ? "settings.btn.strava_disconnect" : "settings.btn.strava_connect";
+		
+		return InlineKeyboardMarkup.builder()
+				.keyboardRow(List.of(
+						createBtn("settings.btn.edit_goal", "settings:nav:goal", lang),
+						createBtn("settings.btn.edit_level", "settings:nav:level", lang)))
+				.keyboardRow(List.of(createBtn(stravaKey, "settings:strava:toggle", lang)))
+				.keyboardRow(List.of(createBtn("settings.btn.close", "settings:control:close", lang)))
+				.build();
+	}
+    
     private InlineKeyboardButton createBtn(String key, String data, String lang) {
         return InlineKeyboardButton.builder()
             .text(messageService.getMessage(key, lang))

@@ -25,7 +25,6 @@ public class PromptMessageSource extends ReloadableResourceBundleMessageSource {
 
     @Override
     protected PropertiesHolder refreshProperties(String filename, PropertiesHolder holder) {
-        long refreshTimestamp = (getCacheMillis() < 0 ? -1 : System.currentTimeMillis());
 
         Resource resource = resourceLoader.getResource(filename + ".yml");
         if (!resource.exists()) {
@@ -36,7 +35,7 @@ public class PromptMessageSource extends ReloadableResourceBundleMessageSource {
             try {
                 long fileTimestamp = resource.lastModified();
 
-                if (holder == null || holder.getRefreshTimestamp() < fileTimestamp) {
+                if (holder == null || holder.getFileTimestamp() != fileTimestamp) {
                     Properties props = yamlLoader.load(resource);
                     holder = new PropertiesHolder(props, fileTimestamp);
                     log.info("Loaded AI prompts from: {}", resource.getDescription());
@@ -47,8 +46,6 @@ public class PromptMessageSource extends ReloadableResourceBundleMessageSource {
             }
         } else {
             log.error("AI prompts file not found: {}.yml or {}.yaml", filename, filename);
-            holder.setRefreshTimestamp(refreshTimestamp);
-            throw new IllegalStateException("Critical: AI prompts file missing at " + filename);
         }
 
         return holder;

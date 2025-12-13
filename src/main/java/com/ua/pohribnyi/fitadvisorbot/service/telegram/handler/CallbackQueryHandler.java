@@ -1,5 +1,7 @@
 package com.ua.pohribnyi.fitadvisorbot.service.telegram.handler;
 
+import java.time.Duration;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
@@ -12,6 +14,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import com.ua.pohribnyi.fitadvisorbot.enums.JobStatus;
 import com.ua.pohribnyi.fitadvisorbot.enums.UserState;
+import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.GenerationJob;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
@@ -20,11 +23,14 @@ import com.ua.pohribnyi.fitadvisorbot.repository.user.UserProfileRepository;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.GeminiApiClient;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.SyntheticDataService;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.prompt.GeminiPromptBuilderService;
+import com.ua.pohribnyi.fitadvisorbot.service.analytics.FitnessAnalyticsService;
 import com.ua.pohribnyi.fitadvisorbot.service.analytics.diary.DiaryService;
+import com.ua.pohribnyi.fitadvisorbot.service.strava.StravaIntegrationService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageBuilderService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.TelegramViewService;
+import com.ua.pohribnyi.fitadvisorbot.service.user.SettingsService;
 import com.ua.pohribnyi.fitadvisorbot.service.user.UserSessionService;
 
 import lombok.RequiredArgsConstructor;
@@ -45,6 +51,8 @@ public class CallbackQueryHandler {
 	private final MessageService messageService;
 	private final MessageBuilderService messageBuilder;
 	private final DiaryService diaryService;
+	private final FitnessAnalyticsService analyticsService;
+	private final SettingsService settingsService;
 
 	/**
 	 * Handles callbacks when user is in the DEFAULT state (e.g., Strava buttons).
@@ -83,56 +91,29 @@ public class CallbackQueryHandler {
 		}
 
 	}
-
-	private void handleLevelSelection(String data, Long chatId, Integer messageId, User user,
-			FitnessAdvisorBotService bot) throws TelegramApiException {
-		String level = extractValue(data);
-
-		saveProfileLevel(user, level);
-		userSessionService.setState(user, UserState.AWAITING_PROFILE_GOAL);
-
-		EditMessageText nextQuestion = viewService.getOnboardingGoalQuestion(chatId, messageId);
-		bot.execute(nextQuestion);
-
-		log.info("User {} selected level: {}", user.getId(), level);
-	}
-
-	private void handleGoalSelection(String data, Long chatId, Integer messageId, User user,
-			FitnessAdvisorBotService bot) throws TelegramApiException {
-		String goal = extractValue(data);
-		saveProfileGoal(user, goal);
-
-		userSessionService.setState(user, UserState.AWAITING_PROFILE_AGE);
-		EditMessageText ageQuestion = viewService.getOnboardingAgeQuestion(chatId, messageId);
-		bot.execute(ageQuestion);
-
-		log.info("User {} selected goal: {}. Asking for age.", user.getId(), goal);
-
-	}
 	
-	private void handleAgeSelection(String data, Long chatId, Integer messageId, User user,
-			FitnessAdvisorBotService bot) throws TelegramApiException {
-		Integer age = Integer.parseInt(extractValue(data));
-	    
-	    UserProfile profile = saveProfileAge(user, age);
-	    userSessionService.setState(user, UserState.ONBOARDING_COMPLETED);
-	    deleteMessage(chatId, messageId, bot);
+	public void handleAnalyticsCallback(CallbackQuery callbackQuery, User user, FitnessAdvisorBotService bot) {
+		String data = callbackQuery.getData();
+		// Format: "analytics:expand:analytics.report.period.weekly"
+		String[] parts = data.split(":");
+		String action = parts[1];
+		String periodKey = parts.length > 2 ? parts[2] : "analytics.report.period.weekly";
 
-	    try {
-			Message sentMessage = bot.executeAndReturn(viewService.getGenerationWaitMessage(chatId));
-			syntheticDataService.triggerHistoryGeneration(user, profile, chatId, sentMessage.getMessageId());
-		} catch (RuntimeException e) {
-			if (e.getMessage().contains("overloaded")) {
-				log.warn("System overload for user {}: {}", user.getId(), e.getMessage());
-				String errorText = TelegramViewService
-						.escapeMarkdownV2(messageService.getMessage("error.system.overloaded", user.getLanguageCode()));
-				SendMessage errorMsg = messageBuilder.createMessage(chatId, errorText);
-				bot.sendMessage(errorMsg);
+		boolean showDetails = "expand".equals(action);
 
-			} else {
-				log.error("Unexpected error during history generation for user {}", user.getId(), e);
-				bot.sendMessage(viewService.getGeneralErrorMessage(chatId));
-			}
+		// Re-generate report to get data for rendering
+		// (Assuming standard 7 days for weekly report for now)
+		Duration duration = Duration.ofDays(7);
+		PeriodReportDto report = analyticsService.generateReport(user, duration, periodKey);
+
+		EditMessageText editMsg = viewService.getAnalyticsReportEditMessage(user.getTelegramUserId(),
+				callbackQuery.getMessage().getMessageId(), report, showDetails);
+		try {
+			bot.execute(editMsg);
+		} catch (TelegramApiException e) {
+			log.error("Failed to toggle analytics view", e);
+		} finally {
+			answerCallback(callbackQuery.getId(), bot);
 		}
 	}
 	
@@ -176,7 +157,95 @@ public class CallbackQueryHandler {
 		}
 	}
 	
+	/**
+     * Handles callbacks starting with "settings:".
+     */
+    public void handleSettingsCallback(CallbackQuery callbackQuery, User user, FitnessAdvisorBotService bot) {
+        String data = callbackQuery.getData();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
+
+        try {
+			if (data.startsWith("settings:nav:")) {
+				String target = extractValue(data);
+				if ("main".equals(target)) {
+					bot.execute(settingsService.refreshSettings(user, messageId));
+				} else {
+					bot.execute(settingsService.startEditing(user, messageId, target));
+				}
+			} else if (data.startsWith("settings:goal:")) {
+				String value = extractValue(data);
+				bot.execute(settingsService.updateGoalAndReturn(user, value, messageId));
+			} else if (data.startsWith("settings:level:")) {
+				String value = extractValue(data);
+				bot.execute(settingsService.updateLevelAndReturn(user, value, messageId));
+			} else if (data.equals("settings:control:close")) {
+				bot.execute(settingsService.closeSettings(user, messageId));
+			} else if (data.equals("settings:control:strava")) {
+				// stub for future use
+			}
+        } catch (Exception e) {
+            log.error("Settings callback error", e);
+            // Handle error gracefully
+        } finally {
+            answerCallback(callbackQuery.getId(), bot);
+        }
+    }
 	
+    private void handleLevelSelection(String data, Long chatId, Integer messageId, User user,
+			FitnessAdvisorBotService bot) throws TelegramApiException {
+		String level = extractValue(data);
+		UserState currentState = userSessionService.getActiveState(user);
+
+		if (currentState != UserState.SETTINGS_EDITING) {
+			saveProfileLevel(user, level);
+			userSessionService.setState(user, UserState.AWAITING_PROFILE_GOAL);
+			bot.execute(viewService.getOnboardingGoalQuestion(chatId, messageId));
+		} else {
+			bot.execute(settingsService.updateLevelAndReturn(user, level, messageId));
+		}
+		log.info("User {} selected level: {}", user.getId(), level);
+	}
+
+	private void handleGoalSelection(String data, Long chatId, Integer messageId, User user,
+			FitnessAdvisorBotService bot) throws TelegramApiException {
+		String goal = extractValue(data);
+		UserState currentState = userSessionService.getActiveState(user);
+
+		if (currentState != UserState.SETTINGS_EDITING) {
+			saveProfileGoal(user, goal);
+			userSessionService.setState(user, UserState.AWAITING_PROFILE_AGE);
+			bot.execute(viewService.getOnboardingAgeQuestion(chatId, messageId)); // Or edit version if preferred
+		} else {
+			bot.execute(settingsService.updateGoalAndReturn(user, goal, messageId));
+		}
+		log.info("User {} selected goal: {}. Asking for age.", user.getId(), goal);
+	}
+
+	private void handleAgeSelection(String data, Long chatId, Integer messageId, User user,
+			FitnessAdvisorBotService bot) throws TelegramApiException {
+
+		int age = Integer.parseInt(extractValue(data));
+		UserProfile profile = saveProfileAge(user, age);
+		userSessionService.setState(user, UserState.ONBOARDING_COMPLETED);
+		deleteMessage(chatId, messageId, bot);
+		try {
+			Message sentMessage = bot.executeAndReturn(viewService.getGenerationWaitMessage(chatId));
+			syntheticDataService.triggerHistoryGeneration(user, profile, chatId, sentMessage.getMessageId());
+		} catch (RuntimeException e) {
+			if (e.getMessage().contains("overloaded")) {
+				log.warn("System overload for user {}: {}", user.getId(), e.getMessage());
+				String errorText = TelegramViewService
+						.escapeMarkdownV2(messageService.getMessage("error.system.overloaded", user.getLanguageCode()));
+				SendMessage errorMsg = messageBuilder.createMessage(chatId, errorText);
+				bot.sendMessage(errorMsg);
+
+			} else {
+				log.error("Unexpected error during history generation for user {}", user.getId(), e);
+				bot.sendMessage(viewService.getGeneralErrorMessage(chatId));
+			}
+		}
+	}
+
 	private String extractValue(String data) {
 		String[] parts = data.split(":");
 		return parts.length > 2 ? parts[2] : "";
@@ -260,4 +329,5 @@ public class CallbackQueryHandler {
 			log.error("Failed to answer callback query: {}", e.getMessage());
 		}
 	}
+	
 }

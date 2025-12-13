@@ -9,11 +9,15 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import com.ua.pohribnyi.fitadvisorbot.enums.UserState;
 import com.ua.pohribnyi.fitadvisorbot.model.dto.analytics.PeriodReportDto;
 import com.ua.pohribnyi.fitadvisorbot.model.entity.user.User;
+import com.ua.pohribnyi.fitadvisorbot.model.entity.user.UserProfile;
+import com.ua.pohribnyi.fitadvisorbot.repository.user.UserProfileRepository;
 import com.ua.pohribnyi.fitadvisorbot.service.analytics.FitnessAnalyticsService;
 import com.ua.pohribnyi.fitadvisorbot.service.analytics.diary.DiaryService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.FitnessAdvisorBotService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.MessageService;
 import com.ua.pohribnyi.fitadvisorbot.service.telegram.TelegramViewService;
+import com.ua.pohribnyi.fitadvisorbot.service.user.SettingsService;
+import com.ua.pohribnyi.fitadvisorbot.service.user.UserService;
 import com.ua.pohribnyi.fitadvisorbot.service.user.UserSessionService;
 
 import lombok.RequiredArgsConstructor;
@@ -29,7 +33,9 @@ public class CommandHandler {
     private final UserSessionService userSessionService;
     private final FitnessAnalyticsService analyticsService;
     private final DiaryService diaryService;
-
+    private final SettingsService settingsService;
+    
+    
     /**
      * Handles global commands that run regardless of state (e.g., /start).
      */
@@ -85,7 +91,7 @@ public class CommandHandler {
 			} else if (commandText.equals(messageService.getMessage("menu.analytics", lang))) {
 				return handleAnalyticsCommand(chatId, user);
 			} else if (commandText.equals(messageService.getMessage("menu.settings", lang))) {
-				return handleSettingsCommand(chatId);
+				return handleSettingsCommand(chatId, user);
 			} else if (commandText.equals("/my_profile") || commandText.equals("/activities")) {
 				return viewService.getGeneralErrorMessage(chatId);
 			} else {
@@ -103,18 +109,15 @@ public class CommandHandler {
     }
 
     private SendMessage handleAnalyticsCommand(Long chatId, User user) {
-        String periodKey = "analytics.report.period.weekly";
-        PeriodReportDto report = analyticsService.generateReport(user, Duration.ofDays(7), periodKey);
-        return viewService.getAnalyticsReportMessage(chatId, report);
-    }
+		String periodKey = "analytics.report.period.weekly";
+		PeriodReportDto report = analyticsService.generateReport(user, Duration.ofDays(7), periodKey);
+		return viewService.getAnalyticsReportMessage(chatId, report);
+	}
 
-    private SendMessage handleSettingsCommand(Long chatId) {
-        // TODO: Implement settings functionality
-        return SendMessage.builder()
-                .chatId(chatId.toString())
-                .text("Showing Settings... (Not Implemented)")
-                .build();
-    }
+	private SendMessage handleSettingsCommand(Long chatId, User user) {
+		log.info("User {} opened settings", user.getId());
+		return settingsService.openSettings(user);
+	}
 
 }
 

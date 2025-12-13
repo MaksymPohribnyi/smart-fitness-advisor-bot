@@ -16,7 +16,7 @@ public class MessageSourceConfig {
 		messageSource.setUseCodeAsDefaultMessage(true);
 		messageSource.setFallbackToSystemLocale(false);
 		messageSource.setResourceLoader(resourceLoader);
-		messageSource.setCacheSeconds(3600); 
+		// messageSource.setCacheSeconds(3600); doesn`t works with YML?
 		return messageSource;
 	}
 

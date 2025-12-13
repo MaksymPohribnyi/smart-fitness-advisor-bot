@@ -1,11 +1,11 @@
 package com.ua.pohribnyi.fitadvisorbot.config.i18n;
 
-import java.io.IOException;
 import java.util.Properties;
 
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.lang.Nullable;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,42 +22,36 @@ public class YamlMessageSource extends ReloadableResourceBundleMessageSource {
 	}
 
 	@Override
-	protected PropertiesHolder refreshProperties(String filename, PropertiesHolder holder) {
-
-		long refreshTimestamp = (getCacheMillis() < 0 ? -1 : System.currentTimeMillis());
-
+	protected PropertiesHolder refreshProperties(String filename, @Nullable PropertiesHolder holder) {
+		log.info(">>> refreshProperties CALLED: filename={}, holder={}", filename, holder != null ? "EXISTS" : "NULL");
+	    
 		Resource resource = resourceLoader.getResource(filename + ".yml");
 		if (!resource.exists()) {
-			resource = resourceLoader.getResource(filename + ".yaml");
+			resource = this.resourceLoader.getResource(filename + ".yaml");
 		}
-
-		if (resource.exists()) {
-			try {
-				long fileTimestamp = resource.lastModified();
-
-				// Upload only if file has changed
-				if (holder == null || holder.getRefreshTimestamp() < fileTimestamp) {
-					Properties props = yamlLoader.load(resource);
-					holder = new PropertiesHolder(props, fileTimestamp);
-					log.debug("Loaded YAML properties from: {}", resource.getDescription());
-				}
-			} catch (IOException ex) {
-				log.warn("Could not load YAML properties from: {}", resource.getDescription(), ex);
-			}
-		} else {
-			log.trace("YAML resource not found: {}.yml or {}.yaml", filename, filename);
-			if (holder == null) {
-				holder = new PropertiesHolder();
-			}
-			holder.setRefreshTimestamp(refreshTimestamp);
+		if (!resource.exists()) {
+			return holder != null ? holder : new PropertiesHolder();
 		}
-
-		return holder;
+		try {
+			long fileTimestamp = resource.lastModified();
+			if (holder != null) {
+	            long holderTimestamp = holder.getFileTimestamp();
+	            log.info(">>> TIMESTAMPS: holder={}, file={}, equal={}", 
+	                holderTimestamp, fileTimestamp, holderTimestamp == fileTimestamp);
+	        }
+			if (holder != null && holder.getFileTimestamp() == fileTimestamp) {
+				log.info(">>> RETURNING SAME HOLDER");
+	            return holder;
+			}
+			log.debug("Loading YAML properties from: {}", resource.getDescription());
+			Properties props = yamlLoader.load(resource);
+			PropertiesHolder newHolder = new PropertiesHolder(props, fileTimestamp);
+			log.info(">>> CREATED NEW HOLDER: timestamp={}", newHolder.getFileTimestamp());
+			return newHolder;
+		} catch (Exception ex) {
+			log.warn("Failed to load YAML properties from {}: {}", filename, ex.getMessage());
+			return holder != null ? holder : new PropertiesHolder();
+		}
 	}
-
-	@Override
-	protected Properties loadProperties(Resource resource, String filename) throws IOException {
-		return null;
-	}
-
+	
 }

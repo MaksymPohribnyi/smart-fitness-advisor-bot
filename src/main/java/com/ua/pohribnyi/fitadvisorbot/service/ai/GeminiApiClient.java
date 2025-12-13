@@ -3,6 +3,7 @@ package com.ua.pohribnyi.fitadvisorbot.service.ai;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,8 @@ public class GeminiApiClient {
 	private final GeminiConfigFactory configFactory; 
     private final GeminiSchemaDefiner schemaDefiner;
 
-	private static final String MODEL_NAME = "gemini-2.5-flash-lite";
+    @Value("${google.gemini.api.model}")
+	private String model_name;
 
 	/**
 	 * Async entry point for AI generation. Executed in dedicated thread pool
@@ -91,7 +93,7 @@ public class GeminiApiClient {
 				.build();
 
 		GenerateContentConfig config = configFactory.createStructuredConfig(schemaDefiner.getFitnessHistorySchema());
-		GenerateContentResponse response = geminiClient.models.generateContent(MODEL_NAME, List.of(content), config);
+		GenerateContentResponse response = geminiClient.models.generateContent(model_name, List.of(content), config);
 
 		String text = extractResponseText(response);
 
@@ -115,7 +117,7 @@ public class GeminiApiClient {
 				.build();
 
 		GenerateContentConfig config = configFactory.createCreativeConfig(schemaDefiner.getDailyAdviceSchema());
-		GenerateContentResponse response = geminiClient.models.generateContent(MODEL_NAME, List.of(content), config);
+		GenerateContentResponse response = geminiClient.models.generateContent(model_name, List.of(content), config);
 
 		return extractResponseText(response);
 	}

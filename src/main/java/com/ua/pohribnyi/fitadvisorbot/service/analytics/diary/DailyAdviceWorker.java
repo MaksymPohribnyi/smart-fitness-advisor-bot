@@ -76,15 +76,14 @@ public class DailyAdviceWorker {
 			String aiResponse = geminiClient.generateText(prompt); // Ensure generateText exists in Client
 
 			DailyAdviceResponse advice = objectMapper.readValue(aiResponse, DailyAdviceResponse.class);
-			String message = advice.getFullMessage();
 			
 			// 3. Complete Job
-			job.setAdviceText(message);
+			job.setAdviceText(advice.getFullMessage());
 			job.setStatus(Status.COMPLETED);
 			jobRepository.save(job);
 
 			// 4. Notify User
-			botService.sendMessage(viewService.getDiaryAdviceMessage(job.getUserChatId(), message));
+			botService.sendMessage(viewService.getDiaryAdviceMessage(job.getUserChatId(), advice));
 
 		} catch (Exception e) {
 			log.error("Job {} processing failed", jobId, e);
