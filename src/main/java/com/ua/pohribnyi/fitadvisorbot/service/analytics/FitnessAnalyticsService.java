@@ -38,13 +38,10 @@ public class FitnessAnalyticsService {
 	}
 
 	@Transactional(readOnly = true)
-	public PeriodReportDto generateReport(User user, Duration duration, String periodKey) {
+	public PeriodReportDto generateReport(User user, UserProfile profile, Duration duration, String periodKey) {
 		LocalDateTime sinceDateTime = LocalDateTime.now().minus(duration);
 		LocalDate sinceDate = LocalDate.now().minusDays(duration.toDays());
 
-		UserProfile profile = userProfileRepository.findByUser(user)
-                .orElseThrow(() -> new IllegalStateException("UserProfile required for analytics generation"));
-		
 		// 1. Base Metrics
 		List<Activity> activities = activityRepository.findActivitiesByUserAndDateAfter(user, sinceDateTime);
 		List<DailyMetric> dailyMetrics = dailyMetricRepository.findMetricsByUserAndDateAfter(user, sinceDate);
@@ -89,6 +86,13 @@ public class FitnessAnalyticsService {
 				.predictionMetric(predictionMetric)
 				.advisorSummaryKey(advisorKey)
 				.build();
+	}
+	
+	@Transactional(readOnly = true)
+	public PeriodReportDto generateReport(User user, Duration duration, String periodKey) {
+		UserProfile profile = userProfileRepository.findByUser(user)
+				.orElseThrow(() -> new IllegalStateException("UserProfile required for analytics generation"));
+		return generateReport(user, profile, duration, periodKey);
 	}
 
 	private String getConsistencyVerdictKey(int score) {

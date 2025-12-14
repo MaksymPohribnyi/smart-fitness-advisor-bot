@@ -176,10 +176,10 @@ public class TelegramViewService {
     }
     
     public SendMessage getDiaryAdviceMessage(Long chatId, DailyAdviceResponse advice) {
-        String lang = messageService.getLangCode(chatId);
-    	
-		String text = escapeMarkdownV2(messageService.getMessage("diary.generating.template", lang,
-				advice.getAnalysis(), advice.getStatus(), advice.getAdvice()));
+		String lang = messageService.getLangCode(chatId);
+
+		String text = escapeMarkdownV2(messageService.getMessage("diary.generating.template", lang, advice.getStatus(),
+				advice.getAnalysis(), advice.getAdvice()));
 		return messageBuilder.createMessage(chatId, text);
 	}
 
@@ -270,11 +270,11 @@ public class TelegramViewService {
 
 		// Safe access to profile fields with fallback
 		String goalText = profile.getGoal() != null
-				? messageService.getMessage("onboarding.goal." + profile.getGoal().toLowerCase(), lang)
+				? messageService.getMessage("onboarding.goal.text." + profile.getGoal().toLowerCase(), lang)
 				: "N/A";
 
 		String levelText = profile.getLevel() != null
-				? messageService.getMessage("onboarding.level." + profile.getLevel().toLowerCase(), lang)
+				? messageService.getMessage("onboarding.level.text." + profile.getLevel().toLowerCase(), lang)
 				: "N/A";
 
 		String ageText = profile.getAge() != null ? String.valueOf(profile.getAge()) : "N/A";
