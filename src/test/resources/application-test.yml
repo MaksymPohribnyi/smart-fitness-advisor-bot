@@ -32,7 +32,9 @@ strava:
 
 google:
   gemini:
-    api-key: fake-key-for-tests
+    api:
+      key: fake-key-for-tests
+      model: gemini-2.5-flash-lite
 
 telegram:
   bot:

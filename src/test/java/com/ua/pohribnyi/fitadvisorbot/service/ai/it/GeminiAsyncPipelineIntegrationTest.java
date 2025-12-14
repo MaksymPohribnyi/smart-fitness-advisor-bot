@@ -58,6 +58,7 @@ import com.ua.pohribnyi.fitadvisorbot.service.ai.factory.GeminiConfigFactory;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.prompt.GeminiPromptBuilderService;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.prompt.PromptService;
 import com.ua.pohribnyi.fitadvisorbot.service.ai.schema.GeminiSchemaDefiner;
+import com.ua.pohribnyi.fitadvisorbot.util.TestUtils;
 import com.ua.pohribnyi.fitadvisorbot.util.concurrency.listener.JobCreationListener;
 import com.ua.pohribnyi.fitadvisorbot.util.concurrency.listener.JobDownloadedEventListener;
 
@@ -111,8 +112,7 @@ class GeminiAsyncPipelineIntegrationTest {
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
         .withDatabaseName("test")
         .withUsername("test")
-        .withPassword("test")
-        .withEnv("TZ", "UTC");
+        .withPassword("test");
     
     @DynamicPropertySource
     static void registerPgProperties(DynamicPropertyRegistry registry) {
@@ -149,7 +149,7 @@ class GeminiAsyncPipelineIntegrationTest {
 
 		// Mock Successful API Response
 		GenerateContentResponse response = mock(GenerateContentResponse.class);
-		when(response.text()).thenReturn(createValidJson());
+		when(response.text()).thenReturn(TestUtils.createValidJson());
 		when(mockModels.generateContent(anyString(), anyList(), any())).thenReturn(response);
 
         // Act: Trigger real async flow
@@ -226,29 +226,6 @@ class GeminiAsyncPipelineIntegrationTest {
         profile.setGoal("health");
         profile.setAge(25);
         return userProfileRepository.save(profile);
-	}
-	
-	private String createValidJson() {
-		return """
-				{
-				  "dailyMetrics": [
-				    {"date": "2023-10-01", "sleepHours": 7.5, "dailyBaseSteps": 5000, "stressLevel": 2}
-				  ],
-				  "activities": [
-				    {
-				      "dateTime": "2023-10-01T10:00:00",
-				      "type": "Run",
-				      "durationSeconds": 1800,
-				      "distanceMeters": 5000,
-				      "avgPulse": 140,
-				      "maxPulse": 160,
-				      "minPulse": 100,
-				      "caloriesBurned": 300,
-				      "activitySteps": 4000
-				    }
-				  ]
-				}
-				""";
 	}
 	
 	@TestConfiguration

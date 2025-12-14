@@ -4,6 +4,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -22,6 +23,42 @@ import lombok.extern.slf4j.Slf4j;
 @EnableAsync // Enables Spring's @Async capabilities
 public class AsyncConfig {
 	
+	@Value("${spring.task.execution.pool.ai.core-size}")
+	private int aiCoreSize;
+
+	@Value("${spring.task.execution.pool.ai.max-size}")
+	private int aiMaxSize;
+
+	@Value("${spring.task.execution.pool.ai.queue-capacity}")
+	private int aiQueueCapacity;
+
+	@Value("${spring.task.execution.pool.ai.thread-name}")
+	private String aiThreadName;
+
+	@Value("${spring.task.execution.pool.data.core-size}")
+	private int dataCoreSize;
+
+	@Value("${spring.task.execution.pool.data.max-size}")
+	private int dataMaxSize;
+
+	@Value("${spring.task.execution.pool.data.queue-capacity}")
+	private int dataQueueCapacity;
+
+	@Value("${spring.task.execution.pool.data.thread-name}")
+	private String dataThreadName;
+	
+    @Value("${spring.task.execution.pool.core-size:2}")
+    private int defaultCoreSize;
+
+    @Value("${spring.task.execution.pool.max-size:4}")
+    private int defaultMaxSize;
+
+    @Value("${spring.task.execution.pool.queue-capacity:25}")
+    private int defaultQueueCapacity;
+
+    @Value("${spring.task.execution.thread-name-prefix:async-}")
+    private String defaultThreadName;
+	
 	/**
 	 * Executor for AI generation tasks (Worker 1: Gemini API calls).
 	 * 
@@ -34,10 +71,10 @@ public class AsyncConfig {
 	@Bean(name = "aiGenerationExecutor")
 	public Executor aiGenerationExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(3);
-		executor.setMaxPoolSize(5);
-		executor.setQueueCapacity(500);
-		executor.setThreadNamePrefix("ai-gen-");
+		executor.setCorePoolSize(aiCoreSize);
+		executor.setMaxPoolSize(aiMaxSize);
+		executor.setQueueCapacity(aiQueueCapacity);
+		executor.setThreadNamePrefix(aiThreadName);
 		executor.setKeepAliveSeconds(60);
 
 		// CRITICAL FIX: Custom rejection handler
@@ -71,10 +108,10 @@ public class AsyncConfig {
 	@Bean(name = "dataProcessingExecutor")
 	public Executor dataProcessingExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(5);
-		executor.setMaxPoolSize(10);
-		executor.setQueueCapacity(100);
-		executor.setThreadNamePrefix("data-proc-");
+		executor.setCorePoolSize(dataCoreSize);
+		executor.setMaxPoolSize(dataMaxSize);
+		executor.setQueueCapacity(dataQueueCapacity);
+		executor.setThreadNamePrefix(dataThreadName);
 		executor.setKeepAliveSeconds(60);
 
 		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
@@ -97,10 +134,10 @@ public class AsyncConfig {
 	@Bean(name = "taskExecutor")
 	public Executor taskExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(2);
-		executor.setMaxPoolSize(4);
-		executor.setQueueCapacity(25);
-		executor.setThreadNamePrefix("async-");
+		executor.setCorePoolSize(defaultCoreSize);
+		executor.setMaxPoolSize(defaultMaxSize);
+		executor.setQueueCapacity(defaultQueueCapacity);
+		executor.setThreadNamePrefix(defaultThreadName);
 		executor.initialize();
 		return executor;
 	}
