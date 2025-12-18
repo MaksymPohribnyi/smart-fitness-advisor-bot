@@ -1,17 +1,18 @@
-FROM gradle:8.12-jdk21-alpine AS builder
+FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /app
 
 # Copy gradle files
-COPY build.gradle settings.gradle gradlew ./
-COPY gradle ./gradle
+COPY gradlew build.gradle settings.gradle gradle.properties ./
+COPY gradle gradle
+
 
 # Download dependencies (layer caching)
-RUN ./gradlew dependencies --no-daemon || true
+RUN ./gradlew dependencies --no-daemon
 
 # Copy source code
 COPY src ./src
-RUN gradle build -x test --no-daemon
+RUN ./gradlew clean build -x test --no-daemon
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
@@ -19,7 +20,7 @@ FROM eclipse-temurin:21-jre-alpine
 # Build application
 WORKDIR /app
 
-COPY --from=build /app/build/libs/*.jar app.jar
+COPY --from=builder /app/build/libs/*.jar app.jar
 
 # Run application
 EXPOSE 8080

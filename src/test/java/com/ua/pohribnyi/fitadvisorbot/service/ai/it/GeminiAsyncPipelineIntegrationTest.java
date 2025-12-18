@@ -119,6 +119,17 @@ class GeminiAsyncPipelineIntegrationTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        
+        registry.add("spring.task.execution.pool.ai.core-size", () -> "5");
+        registry.add("spring.task.execution.pool.ai.max-size", () -> "10");
+        registry.add("spring.task.execution.pool.ai.queue-capacity", () -> "100"); 
+        registry.add("spring.task.execution.pool.ai.thread-name", () -> "ai-gen-test-"); 
+        
+        registry.add("spring.task.execution.pool.data.core-size", () -> "5");
+        registry.add("spring.task.execution.pool.data.max-size", () -> "15");
+        registry.add("spring.task.execution.pool.data.queue-capacity", () -> "500");
+        registry.add("spring.task.execution.pool.data.thread-name", () -> "data-proc-test-");
+        
         registry.add("spring.task.execution.pool.core-size", () -> "2");
         registry.add("spring.task.execution.pool.max-size", () -> "4");
         registry.add("spring.task.execution.pool.queue-capacity", () -> "10");

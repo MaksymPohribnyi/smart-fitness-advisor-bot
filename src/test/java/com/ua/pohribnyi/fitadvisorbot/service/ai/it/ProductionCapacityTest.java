@@ -111,7 +111,7 @@ class ProductionCapacityTest {
 
 		registry.add("spring.task.execution.pool.ai.core-size", () -> "5");
         registry.add("spring.task.execution.pool.ai.max-size", () -> "10");
-        registry.add("spring.task.execution.pool.ai.queue-capacity", () -> "100"); 
+        registry.add("spring.task.execution.pool.ai.queue-capacity", () -> "200"); 
         registry.add("spring.task.execution.pool.ai.thread-name", () -> "ai-gen-test-"); 
         
         registry.add("spring.task.execution.pool.data.core-size", () -> "5");
@@ -141,11 +141,11 @@ class ProductionCapacityTest {
 	}
 
 	@Test
-	@DisplayName("Prod Capacity: 100 users click concurrently -> All accepted (No Rejections)")
-	void handle100ConcurrentUsers_Success() throws InterruptedException {
+	@DisplayName("Prod Capacity: 200 users click concurrently -> All accepted (No Rejections)")
+	void handle200ConcurrentUsers_Success() throws InterruptedException {
 		mockGeminiResponse(50);
 
-		int totalUsers = 100;
+		int totalUsers = 200;
 		CountDownLatch latch = new CountDownLatch(totalUsers);
 
 		AtomicInteger successCount = new AtomicInteger(0);
@@ -153,7 +153,7 @@ class ProductionCapacityTest {
 
 		ExecutorService clientExecutor = Executors.newFixedThreadPool(100);
 
-		log.info("🚀 Launching 100 concurrent requests...");
+		log.info("🚀 Launching 200 concurrent requests...");
 		for (int i = 0; i < totalUsers; i++) {
 			final int idx = i;
 			clientExecutor.submit(() -> {
@@ -179,13 +179,13 @@ class ProductionCapacityTest {
 		log.info("🏁 Result: Success={}, Errors={}", successCount.get(), errorCount.get());
 
 		assertThat(errorCount.get()).as("Unexpected errors occurred").isEqualTo(0);
-		assertThat(successCount.get()).as("All 100 requests should be accepted").isEqualTo(100);
+		assertThat(successCount.get()).as("All 200 requests should be accepted").isEqualTo(200);
 
-		assertThat(jobRepository.count()).isEqualTo(100);
+		assertThat(jobRepository.count()).isEqualTo(200);
 		
 		log.info("⏳ Waiting for async workers to complete processing...");
 		Awaitility.await()
-			.atMost(15, TimeUnit.SECONDS)
+			.atMost(25, TimeUnit.SECONDS)
 			.pollInterval(Duration.ofMillis(500))
 			.until(() -> {
 				List<GenerationJob> jobs = jobRepository.findAll();

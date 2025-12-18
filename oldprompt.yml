@@ -20,3 +20,5 @@ prompt: |
     - Tone: supportive friend + data-driven insights, NOT clinical or robotic
 
     Output ONLY valid JSON in Ukrainian.
+	
+	

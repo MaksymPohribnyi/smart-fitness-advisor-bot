@@ -10,6 +10,11 @@ services:
       - "8080:8080"
     env_file:
       - .env.dev
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fitness_advisor
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_USERNAME: ${DATABASE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DATABASE_PASSWORD}
     depends_on:
       - postgres
     networks:
